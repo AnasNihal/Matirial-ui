@@ -1,93 +1,137 @@
-import axios from 'axios'
+import axios from 'axios';
 
-export const refreshToken = async (token: string) => {
-  const refresh_token = await axios.get(
-    `${process.env.INSTAGRAM_BASE_URL}/refresh_access_token?grant_type=ig_refresh_token&access_token=${token}`
-  )
+const GRAPH_API_VERSION = 'v24.0';
+const GRAPH_BASE_URL = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
-  return refresh_token.data
-}
+// PAGE ACCESS TOKEN (from env)
+const PAGE_ACCESS_TOKEN = process.env.META_PAGE_ACCESS_TOKEN;
 
-export const sendDM = async (
-  userId: string,
-  recieverId: string,
-  prompt: string,
-  token: string
-) => {
-  console.log('sending message')
-  return await axios.post(
-    `${process.env.INSTAGRAM_BASE_URL}/v21.0/${userId}/messages`,
-    {
-      recipient: {
-        id: recieverId,
-      },
-      message: {
-        text: prompt,
-      },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  )
-}
-
-export const sendPrivateMessage = async (
-  userId: string,
-  recieverId: string,
-  prompt: string,
-  token: string
-) => {
-  console.log('sending message')
-  return await axios.post(
-    `${process.env.INSTAGRAM_BASE_URL}/${userId}/messages`,
-    {
-      recipient: {
-        comment_id: recieverId,
-      },
-      message: {
-        text: prompt,
-      },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  )
-}
-
-
+// -----------------------------
+// GENERATE TOKENS (Exchange authorization code for access token)
+// -----------------------------
 export const generateTokens = async (code: string) => {
-  const insta_form = new FormData()
-  insta_form.append('client_id', process.env.INSTAGRAM_CLIENT_ID as string)
+  try {
+    const body = new URLSearchParams({
+      client_id: process.env.INSTAGRAM_CLIENT_ID!,
+      client_secret: process.env.INSTAGRAM_CLIENT_SECRET!,
+      grant_type: "authorization_code",
+      redirect_uri: process.env.INSTAGRAM_REDIRECT_URI!,
+      code: code,
+    });
 
-  insta_form.append(
-    'client_secret',
-    process.env.INSTAGRAM_CLIENT_SECRET as string
-  )
-  insta_form.append('grant_type', 'authorization_code')
-  insta_form.append(
-    'redirect_uri',
-    `${process.env.NEXT_PUBLIC_HOST_URL}/callback/instagram`
-  )
-  insta_form.append('code', code)
+    const response = await axios.post(
+      "https://api.instagram.com/oauth/access_token",   // ✅ IMPORTANT
+      body.toString(),                                   // ✅ IMPORTANT
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded", // ✅ IMPORTANT
+        },
+      }
+    );
 
-  const shortTokenRes = await fetch(process.env.INSTAGRAM_TOKEN_URL as string, {
-    method: 'POST',
-    body: insta_form,
-  })
+    console.log("✅ TOKEN GENERATED:", response.data);
+    return response.data;
 
-  const token = await shortTokenRes.json()
-  if (token.permissions.length > 0) {
-    console.log(token, 'got permissions')
-    const long_token = await axios.get(
-      `${process.env.INSTAGRAM_BASE_URL}/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTAGRAM_CLIENT_SECRET}&access_token=${token.access_token}`
-    )
-
-    return long_token.data
+  } catch (error: any) {
+    console.error("❌ TOKEN ERROR:", error.response?.data || error.message);
+    throw error;
   }
-}
+};
+
+// -----------------------------
+// REFRESH IG USER TOKEN
+// -----------------------------
+export const refreshToken = async (token: string) => {
+  try {
+    const refresh_token = await axios.get(
+      `${GRAPH_BASE_URL}/refresh_access_token?grant_type=ig_refresh_token&access_token=${token}`
+    );
+    return refresh_token.data;
+  } catch (error: any) {
+    console.error('Refresh Token Error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+
+// -----------------------------
+// SEND PRIVATE MESSAGE (DM)
+// -----------------------------
+export const sendDM = async (
+pageId: string, recipientId: string, message: string, token: string) => {
+  console.log('Sending DM to:', recipientId);
+
+  try {
+    const response = await axios.post(
+      `${GRAPH_BASE_URL}/${pageId}/messages`,
+      {
+        recipient: { id: recipientId },
+        message: { text: message },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${PAGE_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    return response;
+
+  } catch (error: any) {
+    console.error('DM Error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+
+// -----------------------------
+// SEND PRIVATE REPLY TO COMMENT
+// -----------------------------
+export const sendPrivateReplyToComment = async (
+pageId: string, commentId: string, message: string, token: string) => {
+  console.log('Sending private reply to comment:', commentId);
+
+  try {
+    const response = await axios.post(
+      `${GRAPH_BASE_URL}/${pageId}/messages`,
+      {
+        recipient: { comment_id: commentId },
+        message: { text: message },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${PAGE_ACCESS_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    return response;
+
+  } catch (error: any) {
+    console.error('Private Reply Error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+
+// -----------------------------
+// GET COMMENT DETAILS (uses IG TOKEN from DB)
+// -----------------------------
+export const getCommentDetails = async (
+  commentId: string,
+  token: string
+) => {
+  try {
+    const response = await axios.get(
+      `${GRAPH_BASE_URL}/${commentId}?fields=id,text,from,timestamp&access_token=${token}`
+    );
+
+    return response.data;
+
+  } catch (error: any) {
+    console.error('Get Comment Error:', error.response?.data || error.message);
+    throw error;
+  }
+};

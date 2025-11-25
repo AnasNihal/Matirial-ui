@@ -1,12 +1,13 @@
-import React from 'react'
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/nextjs"
 
-type Props = {
-  children: React.ReactNode
-}
-
-const Layout = ({ children }: Props) => {
+const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="h-screen flex justify-center items-center">{children}</div>
+    <div className="h-screen flex justify-center items-center">
+      <SignedOut>{children}</SignedOut>
+      <SignedIn>
+        <RedirectToSignIn />
+      </SignedIn>
+    </div>
   )
 }
 
