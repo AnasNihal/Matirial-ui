@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { 
   sendDM, 
   sendPrivateReplyToComment,
-  getCommentDetails 
+  getCommentDetails, 
+  sendPublicReplyToComment
 } from '@/lib/fetch'
 import {
   matchKeyword,
@@ -138,30 +139,40 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
   }
 
   // Handle MESSAGE listener - Send private reply to comment
-  if (automation.listener?.listener === 'MESSAGE') {
-    console.log('Sending private reply to comment...')
-    
-    try {
-      const privateReply = await sendPrivateReplyToComment(
-        pageId,
-        commentId,
-        automation.listener.prompt || 'Thank you for your comment!',
-        token
-      )
+if (automation.listener?.listener === 'MESSAGE') {
+  console.log('Sending PRIVATE + PUBLIC reply...')
 
-      if (privateReply.status === 200) {
-        await trackResponses(automation.id, 'COMMENT')
-        console.log('Private reply sent successfully')
-        
-        return NextResponse.json(
-          { message: 'Private reply sent' },
-          { status: 200 }
-        )
-      }
-    } catch (error) {
-      console.error('Failed to send private reply:', error)
-    }
+  const dmMessage =
+    automation.listener.prompt || 'Thanks for your message 💬'
+
+  const publicReply =
+    automation.listener.commentReply || 'Thanks for your comment ❤️'
+
+  try {
+    // ✅ 1. PUBLIC COMMENT REPLY (UNDER POST)
+    await sendPublicReplyToComment(commentId, publicReply)
+    console.log('✅ Public reply sent')
+
+    // ✅ 2. PRIVATE DM
+    await sendPrivateReplyToComment(pageId, commentId, dmMessage, token)
+    console.log('✅ Private DM sent')
+
+    // ✅ 3. Track response
+    await trackResponses(automation.id, 'COMMENT')
+
+    return NextResponse.json(
+      { message: 'Public + Private replies sent successfully' },
+      { status: 200 }
+    )
+
+  } catch (error: any) {
+    console.error(
+      '❌ Failed to send replies:',
+      error.response?.data || error.message
+    )
   }
+}
+
 
   // Handle SMARTAI listener
   if (
@@ -238,6 +249,11 @@ async function handleMessagingEvent(entry: any, webhook_payload: any) {
   const messaging = entry.messaging?.[0]
   if (!messaging) {
     return NextResponse.json({ message: 'No messaging data' }, { status: 200 })
+  }
+
+  if (messaging?.message?.is_echo === true) {
+    console.log("🚫 Ignoring echo message")
+    return NextResponse.json({ message: "Echo ignored" }, { status: 200 })
   }
 
   const messageText = messaging.message?.text || ''

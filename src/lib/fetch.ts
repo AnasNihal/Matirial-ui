@@ -116,6 +116,39 @@ pageId: string, commentId: string, message: string, token: string) => {
 };
 
 
+
+export const sendPublicReplyToComment = async (
+  commentId: string,
+  message: string
+) => {
+  console.log('Sending PUBLIC reply to comment:', commentId)
+
+  try {
+    const response = await axios.post(
+      `${GRAPH_BASE_URL}/${commentId}/replies`,
+      { message },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.META_PAGE_ACCESS_TOKEN}`, // ✅ PAGE TOKEN ONLY
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+
+    return response
+
+  } catch (error: any) {
+    console.error(
+      'Public Reply Error:',
+      error.response?.data || error.message
+    )
+    throw error
+  }
+}
+
+
+
+
 // -----------------------------
 // GET COMMENT DETAILS (uses IG TOKEN from DB)
 // -----------------------------
