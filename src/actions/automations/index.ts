@@ -1,5 +1,6 @@
 'use server'
 
+import { refreshToken } from '@/lib/fetch'
 import { onCurrentUser } from '../user'
 import { findUser } from '../user/queries'
 import {
@@ -13,6 +14,7 @@ import {
   getAutomations,
   updateAutomation,
 } from './queries'
+import { client } from '@/lib/prisma'
 
 export const createAutomations = async (id?: string) => {
   const user = await onCurrentUser()
@@ -126,18 +128,52 @@ export const deleteKeyword = async (id: string) => {
 
 export const getProfilePosts = async () => {
   const user = await onCurrentUser()
+
   try {
     const profile = await findUser(user.id)
-    const posts = await fetch(
-      `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp&limit=10&access_token=${profile?.integrations[0].token}`
+
+    let token = profile?.integrations?.[0]?.token
+    if (!token) return { status: 404, data: [] }
+
+    let response = await fetch(
+      `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp&limit=10&access_token=${token}`,
+      { cache: 'no-store' }
     )
-    const parsed = await posts.json()
-    if (parsed) return { status: 200, data: parsed }
-    console.log('🔴 Error in getting posts')
-    return { status: 404 }
+
+    let parsed = await response.json()
+
+    // ✅ AUTO REFRESH IF TOKEN EXPIRED
+    if (parsed?.error?.code === 190) {
+      console.log("🔁 Refreshing Token...")
+
+      const newTokenData = await refreshToken(token)
+      token = newTokenData.access_token
+
+      // Save new token in DB (important)
+      if (profile?.integrations?.length) {
+        await client.integrations.update({
+          where: { id: profile.integrations[0].id },
+          data: { token },
+        })
+      }
+
+
+      const retry = await fetch(
+        `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp&limit=10&access_token=${token}`,
+        { cache: 'no-store' }
+      )
+
+      parsed = await retry.json()
+    }
+
+    if (parsed?.data?.length > 0) {
+      return { status: 200, data: parsed }
+    }
+
+    return { status: 200, data: { data: [] } }
   } catch (error) {
-    console.log('🔴 server side Error in getting posts ', error)
-    return { status: 500 }
+    console.log("❌ ERROR in getProfilePosts:", error)
+    return { status: 500, data: [] }
   }
 }
 
