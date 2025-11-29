@@ -15,19 +15,11 @@ type Props = {
   setSelectedPost: (post: any) => void
 }
 
-const PostPanel = ({
-  id,
-  isActive,
-  onFocus,
-  selectedPost,
-  setSelectedPost,
-}: Props) => {
+const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Props) => {
   const { data, isLoading } = useQueryAutomationPosts()
   const { posts, onSelectPost, mutate, isPending } = useAutomationPosts(id)
 
   const igData = data?.data?.data as InstagramPostProps[] | undefined
-  console.log("INSTAGRAM DATA", data)
-
 
   return (
     <div
@@ -43,9 +35,7 @@ const PostPanel = ({
             Choose which content this automation should listen to.
           </p>
         </div>
-        <span className="text-[10px] uppercase tracking-wide text-text-secondary">
-          Optional
-        </span>
+        <span className="text-[10px] uppercase tracking-wide text-text-secondary">Optional</span>
       </div>
 
       {isLoading && (
@@ -88,18 +78,16 @@ const PostPanel = ({
                     caption: post.caption,
                   })
                 }}
-                className={`relative aspect-square rounded-lg overflow-hidden border
-                  ${
-                    selectedPost?.id === post.id
-                      ? 'border-blue-500'
-                      : 'border-transparent'
-                  }`}
+                className={`relative aspect-square rounded-lg overflow-hidden border ${
+                  selectedPost?.id === post.id ? 'border-blue-500' : 'border-transparent'
+                }`}
               >
                 <Image
                   src={post.media_url}
                   alt="Post"
                   fill
                   className="object-cover"
+                  unoptimized
                 />
               </button>
             ))}

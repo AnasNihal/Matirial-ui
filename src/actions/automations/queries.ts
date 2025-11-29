@@ -38,10 +38,8 @@ export const getAutomations = async (clerkId: string) => {
 }
 
 export const findAutomation = async (id: string) => {
-  return await client.automation.findUnique({
-    where: {
-      id,
-    },
+  const automation = await client.automation.findUnique({
+    where: { id },
     include: {
       keywords: true,
       trigger: true,
@@ -50,12 +48,29 @@ export const findAutomation = async (id: string) => {
       User: {
         select: {
           subscription: true,
-          integrations: true,
+          integrations: {
+            select: {
+              id: true,
+              token: true,
+              instagramId: true,
+              instagramUsername: true,
+              instagramProfilePicture: true,
+            },
+          },
         },
       },
     },
   })
+
+  // 🔍 DEBUG: Log what we got from database
+  console.log('📊 DATABASE QUERY RESULT:')
+  console.log('User:', automation?.User)
+  console.log('Integrations:', automation?.User?.integrations)
+  console.log('First Integration:', automation?.User?.integrations?.[0])
+
+  return automation
 }
+
 
 export const updateAutomation = async (
   id: string,

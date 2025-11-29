@@ -132,9 +132,53 @@ export const getProfilePosts = async () => {
   try {
     const profile = await findUser(user.id)
 
-    let token = profile?.integrations?.[0]?.token
-    if (!token) return { status: 404, data: [] }
+    const integration = profile?.integrations?.[0]
+    if (!integration || !integration.token) {
+      return { status: 404, data: [] }
+    }
 
+    let token = integration.token
+
+    // ✅ 1) PRE-EMPTIVE REFRESH IF EXPIRING SOON
+    if (integration.expiresAt) {
+      const expiresAt = new Date(integration.expiresAt)
+      const now = new Date()
+      const diffMs = expiresAt.getTime() - now.getTime()
+
+      // e.g. if less than 5 days left, refresh now
+      const FIVE_DAYS = 5 * 24 * 60 * 60 * 1000
+
+      if (diffMs > 0 && diffMs < FIVE_DAYS) {
+        console.log('🔁 Pre-emptive IG token refresh (expires soon)...')
+        try {
+          const newTokenData = await refreshToken(token)
+
+          if (newTokenData?.access_token) {
+            token = newTokenData.access_token
+
+            const expiresInSec =
+              typeof newTokenData.expires_in === 'number'
+                ? newTokenData.expires_in
+                : 60 * 24 * 60 * 60 // fallback 60 days
+
+            await client.integrations.update({
+              where: { id: integration.id },
+              data: {
+                token,
+                expiresAt: new Date(Date.now() + expiresInSec * 1000),
+              },
+            })
+
+            console.log('✅ Token refreshed before expiry')
+          }
+        } catch (e) {
+          console.log('❌ Failed pre-emptive IG refresh:', e)
+          // continue with old token, IG will respond if invalid
+        }
+      }
+    }
+
+    // ✅ 2) TRY FETCHING MEDIA WITH CURRENT / REFRESHED TOKEN
     let response = await fetch(
       `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp&limit=10&access_token=${token}`,
       { cache: 'no-store' }
@@ -142,40 +186,57 @@ export const getProfilePosts = async () => {
 
     let parsed = await response.json()
 
-    // ✅ AUTO REFRESH IF TOKEN EXPIRED
+    // ✅ 3) IF IG SAYS TOKEN EXPIRED (code 190) → REFRESH & RETRY ONCE
     if (parsed?.error?.code === 190) {
-      console.log("🔁 Refreshing Token...")
+      console.log('🔁 Token expired, refreshing & retrying...')
 
-      const newTokenData = await refreshToken(token)
-      token = newTokenData.access_token
+      try {
+        const newTokenData = await refreshToken(token)
+        if (!newTokenData?.access_token) {
+          console.log('❌ Refresh response missing access_token')
+          return { status: 401, data: [] }
+        }
 
-      // Save new token in DB (important)
-      if (profile?.integrations?.length) {
+        token = newTokenData.access_token
+
+        const expiresInSec =
+          typeof newTokenData.expires_in === 'number'
+            ? newTokenData.expires_in
+            : 60 * 24 * 60 * 60 // fallback 60 days
+
         await client.integrations.update({
-          where: { id: profile.integrations[0].id },
-          data: { token },
+          where: { id: integration.id },
+          data: {
+            token,
+            expiresAt: new Date(Date.now() + expiresInSec * 1000),
+          },
         })
+
+        const retry = await fetch(
+          `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp&limit=10&access_token=${token}`,
+          { cache: 'no-store' }
+        )
+
+        parsed = await retry.json()
+      } catch (e) {
+        console.log('❌ ERROR refreshing expired IG token:', e)
+        return { status: 401, data: [] }
       }
-
-
-      const retry = await fetch(
-        `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp&limit=10&access_token=${token}`,
-        { cache: 'no-store' }
-      )
-
-      parsed = await retry.json()
     }
 
+    // ✅ 4) NORMAL RETURN
     if (parsed?.data?.length > 0) {
       return { status: 200, data: parsed }
     }
 
     return { status: 200, data: { data: [] } }
   } catch (error) {
-    console.log("❌ ERROR in getProfilePosts:", error)
+    console.log('❌ ERROR in getProfilePosts:', error)
     return { status: 500, data: [] }
   }
 }
+
+
 
 export const savePosts = async (
   autmationId: string,

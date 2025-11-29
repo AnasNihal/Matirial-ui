@@ -39,20 +39,27 @@ export const generateTokens = async (code: string) => {
 };
 
 // -----------------------------
-// REFRESH IG USER TOKEN
+// REFRESH IG USER TOKEN (LONG-LIVED)
 // -----------------------------
-export const refreshToken = async (token: string) => {
+export const refreshToken = async (longLivedToken: string) => {
   try {
-    const refresh_token = await axios.get(
-      `${GRAPH_BASE_URL}/refresh_access_token?grant_type=ig_refresh_token&access_token=${token}`
-    );
-    return refresh_token.data;
-  } catch (error: any) {
-    console.error('Refresh Token Error:', error.response?.data || error.message);
-    throw error;
-  }
-};
+    const res = await axios.get(
+      `${process.env.INSTAGRAM_BASE_URL}/refresh_access_token`,
+      {
+        params: {
+          grant_type: 'ig_refresh_token',
+          access_token: longLivedToken,
+        },
+      }
+    )
 
+    // Instagram returns: { access_token, token_type, expires_in }
+    return res.data
+  } catch (error) {
+    console.error('❌ Error refreshing IG token:', error)
+    return null
+  }
+}
 
 // -----------------------------
 // SEND PRIVATE MESSAGE (DM)
