@@ -3,11 +3,19 @@
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import React from 'react'
+import { ArrowLeft, Phone, Video, Camera, ImageIcon, Plus, Play, Grid3x3 } from 'lucide-react'
 
 type SelectedPost = {
   id: string
   media: string
   caption?: string
+  mediaType?: 'IMAGE' | 'VIDEO' | 'CAROSEL_ALBUM'
+  thumbnail?: string
+}
+
+type DmLink = {
+  title: string
+  url: string
 }
 
 type Props = {
@@ -18,6 +26,8 @@ type Props = {
   activeStep: 'post' | 'keyword' | 'dm'
   username?: string
   profilePic?: string
+  dmImage?: string | null
+  dmLinks?: DmLink[]
 }
 
 export default function PhonePreview({
@@ -28,6 +38,8 @@ export default function PhonePreview({
   activeStep,
   username = 'your_account',
   profilePic,
+  dmImage,
+  dmLinks = [],
 }: Props) {
   // ------- LOGS (so you can debug easily) -------
   console.log('📱 PhonePreview -> props:', {
@@ -40,6 +52,13 @@ export default function PhonePreview({
   })
 
   const hasPost = !!selectedPost
+  const isReel = selectedPost?.mediaType === 'VIDEO'
+  const isCarousel = selectedPost?.mediaType === 'CAROSEL_ALBUM'
+  
+  // Use thumbnail for reels if available, otherwise use media URL
+  const postImageUrl = isReel && selectedPost?.thumbnail
+    ? selectedPost.thumbnail
+    : selectedPost?.media
 
   // small helper to render avatar fallback circle
   const AvatarFallback = ({ name, size = 32 }: { name: string; size?: number }) => {
@@ -132,19 +151,40 @@ export default function PhonePreview({
           style={{ height: 360 }}
         >
           {hasPost ? (
-            <Image
-              src={selectedPost!.media}
-              alt="post"
-              fill
-              className="object-contain"
-              unoptimized
-              onLoad={() => console.log('✅ post image loaded')}
-              onError={() => console.log('❌ post image failed to load')}
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={postImageUrl || selectedPost!.media}
+                alt={isReel ? 'Reel' : isCarousel ? 'Carousel' : 'Post'}
+                fill
+                className="object-contain"
+                unoptimized
+                onLoad={() => console.log('✅ post image loaded')}
+                onError={() => console.log('❌ post image failed to load')}
+              />
+              {/* Reel indicator overlay */}
+              {isReel && (
+                <div className="absolute bottom-3 left-3 flex items-center gap-2 z-10">
+                  <div className="bg-black/80 rounded-full p-2 flex items-center justify-center backdrop-blur-sm">
+                    <Play className="h-4 w-4 text-white fill-white" />
+                  </div>
+                  <span className="text-white text-xs font-semibold bg-black/80 px-2.5 py-1 rounded backdrop-blur-sm">
+                    Reel
+                  </span>
+                </div>
+              )}
+              {/* Carousel indicator */}
+              {isCarousel && (
+                <div className="absolute bottom-3 left-3 z-10">
+                  <div className="bg-black/80 rounded px-2 py-1 backdrop-blur-sm">
+                    <div className="w-4 h-4 border border-white rounded-sm" />
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="w-[280px] h-[280px] rounded-md border border-dashed border-white/10 flex items-center justify-center text-center px-4">
               <div className="text-white/60 text-[13px]">
-                You haven’t picked a post or reel for your automation yet
+                You haven't picked a post or reel for your automation yet
               </div>
             </div>
           )}
@@ -266,7 +306,7 @@ export default function PhonePreview({
           )}
         </AnimatePresence>
 
-        {/* ---------------- DM SCREEN (overlay) ---------------- */}
+        {/* ---------------- DM SCREEN (overlay) - USER PERSPECTIVE ---------------- */}
         <AnimatePresence>
           {activeStep === 'dm' && (
             <motion.div
@@ -276,11 +316,13 @@ export default function PhonePreview({
               transition={{ duration: 0.2 }}
               className="absolute inset-0 z-40"
             >
-              <div className="absolute inset-0 bg-black/90 p-4 flex flex-col">
+              <div className="absolute inset-0 bg-black flex flex-col">
                 {/* header */}
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                   <div className="flex items-center gap-3">
-                    <button className="text-white/80 text-xl leading-none">‹</button>
+                    <button className="text-white">
+                      <ArrowLeft className="h-5 w-5" />
+                    </button>
                     {profilePic ? (
                       <div className="w-8 h-8 rounded-full overflow-hidden">
                         <Image src={profilePic} width={32} height={32} alt="p" unoptimized />
@@ -290,41 +332,134 @@ export default function PhonePreview({
                     )}
                     <div>
                       <div className="text-sm text-white font-semibold">{username}</div>
-                      <div className="text-xs text-white/60">Active now</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 text-white/70">
-                    <button>📞</button>
-                    <button>ⓘ</button>
+                  <div className="flex items-center gap-3 text-white">
+                    <button>
+                      <Phone className="h-5 w-5" />
+                    </button>
+                    <button>
+                      <Video className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
 
-                {/* messages area (static placeholder) */}
-                <div className="flex-1 overflow-auto">
+                {/* messages area - USER PERSPECTIVE (receiving messages from automation) */}
+                <div className="flex-1 overflow-auto p-4 bg-black">
                   <div className="flex flex-col gap-3">
-                    <div className="text-white/60 text-sm mb-3">This is a preview of the DM thread</div>
+                    {/* Text messages from automation (left side) */}
+                    {dmText && !dmImage && (
+                      <div className="self-start bg-[#262626] text-white p-3 rounded-2xl max-w-[75%]">
+                        <p className="text-sm leading-relaxed">{dmText}</p>
+                      </div>
+                    )}
 
-                    <div className="self-start bg-white/6 text-white p-3 rounded-2xl max-w-[72%]">
-                      Hey! Thanks for reaching out — this DM preview appears here.
-                    </div>
+                    {/* Message with button (if text and links but no image) */}
+                    {dmText && !dmImage && dmLinks.length > 0 && (
+                      <div className="self-start bg-[#262626] text-white p-3 rounded-2xl max-w-[75%]">
+                        <p className="text-sm leading-relaxed mb-2">{dmText}</p>
+                        {/* Links as buttons within message bubble */}
+                        <div className="flex flex-col gap-2 mt-2">
+                          {dmLinks.map((link, index) => (
+                            <button
+                              key={index}
+                              className="bg-[#3a3a3a] hover:bg-[#444444] text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors text-center w-full"
+                            >
+                              {link.title}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                    <div className="self-end bg-blue-600 text-white p-3 rounded-2xl max-w-[72%]">
-                      {dmText || "Thanks for your comment! We'll DM you soon."}
-                    </div>
+                    {/* User's reply (right side - purple) */}
+                    {dmText && dmLinks.length > 0 && (
+                      <div className="self-end bg-[#8B5CF6] text-white p-3 rounded-2xl max-w-[75%]">
+                        <p className="text-sm">
+                          {dmLinks[0]?.title || 'User reply'}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* DM Preview with Image/Reel - Message and buttons come along with image */}
+                    {dmImage ? (
+                      <div className="self-start max-w-[75%]">
+                        <div className="bg-[#262626] rounded-2xl overflow-hidden">
+                          {/* Image/Reel */}
+                          <div className="relative w-full">
+                            <img
+                              src={dmImage}
+                              alt="DM media"
+                              className="w-full h-auto object-cover"
+                            />
+                            {/* Play icon and view count overlay (bottom-left) */}
+                            <div className="absolute bottom-2 left-2 flex items-center gap-1.5 text-white">
+                              <div className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                                <Play className="h-3 w-3 fill-white" />
+                              </div>
+                              <span className="text-xs font-medium bg-black/60 px-1.5 py-0.5 rounded backdrop-blur-sm">10.8M</span>
+                            </div>
+                          </div>
+                          
+                          {/* Text and buttons below image within same bubble */}
+                          <div className="p-3">
+                            {dmText && (
+                              <p className="text-white text-sm mb-2">{dmText}</p>
+                            )}
+                            {/* Links as buttons within message bubble */}
+                            {dmLinks.length > 0 && (
+                              <div className="flex flex-col gap-2">
+                                {dmLinks.map((link, index) => (
+                                  <button
+                                    key={index}
+                                    className="bg-[#3a3a3a] hover:bg-[#444444] text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors text-center w-full"
+                                  >
+                                    {link.title}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Links as clickable buttons (without image and without text) */
+                      !dmText && dmLinks.length > 0 && (
+                        <div className="self-start max-w-[75%] flex flex-col gap-2">
+                          {dmLinks.map((link, index) => (
+                            <button
+                              key={index}
+                              className="bg-[#262626] hover:bg-[#2f2f2f] text-white px-4 py-3 rounded-xl text-sm font-medium transition-colors text-center"
+                            >
+                              {link.title}
+                            </button>
+                          ))}
+                        </div>
+                      )
+                    )}
                   </div>
                 </div>
 
-                {/* composer */}
-                <div className="mt-3">
-                  <div className="bg-white/6 rounded-full px-3 py-2 flex items-center gap-3">
-                    <button className="text-white/70">＋</button>
+                {/* composer - User's input area */}
+                <div className="p-4 border-t border-white/10 bg-black">
+                  <div className="bg-[#1f1f1f] rounded-full px-3 py-2.5 flex items-center gap-3">
+                    <button className="text-white/70 hover:text-white transition-colors">
+                      <Camera className="h-5 w-5" />
+                    </button>
                     <input
-                      className="bg-transparent outline-none text-white placeholder:text-white/50 flex-1"
+                      className="bg-transparent outline-none text-white placeholder:text-white/50 flex-1 text-sm"
                       placeholder="Message..."
-                      value={dmText}
                       readOnly
                     />
-                    <button className="text-white/70">📎</button>
+                    <button className="text-white/70 hover:text-white transition-colors">
+                      <ImageIcon className="h-5 w-5" />
+                    </button>
+                    <button className="text-white/70 hover:text-white transition-colors">
+                      <Grid3x3 className="h-5 w-5" />
+                    </button>
+                    <button className="text-white/70 hover:text-white transition-colors">
+                      <Plus className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
               </div>

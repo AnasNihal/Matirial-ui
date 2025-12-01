@@ -69,11 +69,11 @@ export const useQueryAutomations = () => {
     },
     staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes
     gcTime: Infinity, // 🔥 NEVER garbage collect
-    refetchOnMount: true, // ✅ Fetch on mount if no cache, use cache if exists
+    refetchOnMount: true, // ✅ CRITICAL: Fetch on mount if no cache exists
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     retry: 1, // ✅ Retry once on failure
-    // 🔥 KEY: Use cached data instantly, no loading state
+    // 🔥 Show cached data instantly while fetching in background
     placeholderData: (previousData) => previousData,
   })
 }
@@ -96,13 +96,13 @@ export const useQueryAutomation = (id: string) => {
         throw error
       }
     },
-    staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes (was Infinity)
+    staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes
     gcTime: Infinity, // 🔥 KEEP FOREVER
     enabled: !!id,
-    refetchOnMount: true, // ✅ Fetch on mount if no cache (was false)
+    refetchOnMount: true, // ✅ CRITICAL: Fetch on mount if no cache exists
     refetchOnWindowFocus: false,
     retry: 1, // ✅ Retry once on failure
-    // 🔥 Show old data while fetching new (instant feel)
+    // 🔥 Show cached data instantly while fetching in background
     placeholderData: (previousData) => previousData,
   })
 }
@@ -111,11 +111,44 @@ export const useQueryAutomation = (id: string) => {
 export const useQueryUser = () => {
   return useQuery({
     queryKey: ['user-profile'],
-    queryFn: onUserInfo,
-    staleTime: Infinity,
+    queryFn: async () => {
+      console.log('🔍 [useQueryUser] Calling onUserInfo...')
+      try {
+        const result = await onUserInfo()
+        console.log('🔍 [useQueryUser] Result received:', {
+          status: result?.status,
+          hasData: !!result?.data,
+          hasIntegrations: !!result?.data?.integrations,
+        })
+        
+        // ✅ Handle 404 as valid response (user not found in DB yet)
+        if (result?.status === 404 || result?.status === 200) {
+          return result
+        }
+        
+        // ✅ For other errors, return error response
+        if (result?.status && result.status >= 400) {
+          console.warn('⚠️ [useQueryUser] Error status:', result.status)
+          return result
+        }
+        
+        return result
+      } catch (error: any) {
+        console.error('❌ [useQueryUser] Error:', error)
+        console.error('❌ [useQueryUser] Error details:', {
+          message: error?.message,
+          stack: error?.stack,
+        })
+        // ✅ Return error response instead of throwing
+        return { status: 500, data: null, error: error?.message }
+      }
+    },
+    staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes
     gcTime: Infinity,
-    refetchOnMount: false,
+    refetchOnMount: true, // ✅ CRITICAL: Fetch on mount if no cache exists
     refetchOnWindowFocus: false,
+    retry: 1, // ✅ Retry once on failure
+    // 🔥 Show cached data instantly while fetching in background
     placeholderData: (previousData) => previousData,
   })
 }
@@ -124,11 +157,27 @@ export const useQueryUser = () => {
 export const useQueryAutomationPosts = () => {
   return useQuery({
     queryKey: ['instagram-media'],
-    queryFn: getProfilePosts,
-    staleTime: Infinity,
-    gcTime: Infinity,
-    refetchOnMount: false,
+    queryFn: async () => {
+      console.log('🔍 [useQueryAutomationPosts] Calling getProfilePosts...')
+      try {
+        const result = await getProfilePosts()
+        console.log('🔍 [useQueryAutomationPosts] Result received:', {
+          status: result?.status,
+          hasData: !!result?.data,
+          dataLength: result?.data?.data?.length || 0,
+        })
+        return result
+      } catch (error) {
+        console.error('❌ [useQueryAutomationPosts] Error:', error)
+        throw error
+      }
+    },
+    staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes (not Infinity - posts can change)
+    gcTime: Infinity, // 🔥 KEEP FOREVER
+    refetchOnMount: true, // ✅ Fetch on mount if no cache (was false - this was the bug!)
     refetchOnWindowFocus: false,
+    retry: 1, // ✅ Retry once on failure
+    // 🔥 Show cached data instantly while fetching in background
     placeholderData: (previousData) => previousData,
   })
 }

@@ -177,8 +177,20 @@ export const getAllAutomations = async () => {
 }
 
 export const getAutomationInfo = async (id: string) => {
+  console.log('🔍 [getAutomationInfo] Starting for id:', id)
+  
+  // Validate UUID format before querying
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(id)) {
+    console.error('❌ [getAutomationInfo] Invalid automation ID format:', id)
+    return {
+      status: 400,
+      data: null,
+      error: `Invalid automation ID format: ${id}. Expected UUID format.`,
+    }
+  }
+  
   try {
-    console.log('🔍 [getAutomationInfo] Starting for id:', id)
     await onCurrentUser()
     
     const automation = await findAutomation(id)
@@ -278,14 +290,20 @@ export const updateAutomationName = async (
     automation?: string
   }
 ) => {
+  console.log('🔍 [updateAutomationName] Starting for automationId:', automationId, 'data:', data)
   await onCurrentUser()
   try {
     const update = await updateAutomation(automationId, data)
+    console.log('🔍 [updateAutomationName] Update result:', !!update)
     if (update) {
+      console.log('✅ [updateAutomationName] Success')
       return { status: 200, data: 'Automation successfully updated' }
     }
+    console.warn('⚠️ [updateAutomationName] Automation not found')
     return { status: 404, data: 'Oops! could not find automation' }
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ [updateAutomationName] ERROR:', error)
+    console.error('❌ [updateAutomationName] Error details:', { message: error?.message, stack: error?.stack })
     return { status: 500, data: 'Oops! something went wrong' }
   }
 }
@@ -296,36 +314,59 @@ export const saveListener = async (
   prompt: string,
   reply?: string
 ) => {
+  console.log('🔍 [saveListener] Starting for automationId:', autmationId, 'listener:', listener, 'prompt length:', prompt?.length)
   await onCurrentUser()
   try {
     const create = await addListener(autmationId, listener, prompt, reply)
-    if (create) return { status: 200, data: 'Listener created' }
+    console.log('🔍 [saveListener] Create result:', !!create)
+    if (create) {
+      console.log('✅ [saveListener] Success')
+      return { status: 200, data: 'Listener created' }
+    }
+    console.warn('⚠️ [saveListener] Failed to create listener')
     return { status: 404, data: 'Cant save listener' }
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ [saveListener] ERROR:', error)
+    console.error('❌ [saveListener] Error details:', { message: error?.message, stack: error?.stack })
     return { status: 500, data: 'Oops! something went wrong' }
   }
 }
 
 export const saveTrigger = async (automationId: string, trigger: string[]) => {
+  console.log('🔍 [saveTrigger] Starting for automationId:', automationId, 'trigger:', trigger)
   await onCurrentUser()
   try {
     const create = await addTrigger(automationId, trigger)
-    if (create) return { status: 200, data: 'Trigger saved' }
+    console.log('🔍 [saveTrigger] Create result:', !!create)
+    if (create) {
+      console.log('✅ [saveTrigger] Success')
+      return { status: 200, data: 'Trigger saved' }
+    }
+    console.warn('⚠️ [saveTrigger] Failed to create trigger')
     return { status: 404, data: 'Cannot save trigger' }
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ [saveTrigger] ERROR:', error)
+    console.error('❌ [saveTrigger] Error details:', { message: error?.message, stack: error?.stack })
     return { status: 500, data: 'Oops! something went wrong' }
   }
 }
 
 export const saveKeyword = async (automationId: string, keyword: string) => {
+  console.log('🔍 [saveKeyword] Starting for automationId:', automationId, 'keyword:', keyword)
   await onCurrentUser()
   try {
     const create = await addKeyWord(automationId, keyword)
+    console.log('🔍 [saveKeyword] Create result:', !!create)
 
-    if (create) return { status: 200, data: 'Keyword added successfully' }
-
+    if (create) {
+      console.log('✅ [saveKeyword] Success')
+      return { status: 200, data: 'Keyword added successfully' }
+    }
+    console.warn('⚠️ [saveKeyword] Failed to create keyword')
     return { status: 404, data: 'Cannot add this keyword' }
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ [saveKeyword] ERROR:', error)
+    console.error('❌ [saveKeyword] Error details:', { message: error?.message, stack: error?.stack })
     return { status: 500, data: 'Oops! something went wrong' }
   }
 }
@@ -346,14 +387,35 @@ export const deleteKeyword = async (id: string) => {
 }
 
 export const getProfilePosts = async () => {
-  const user = await onCurrentUser()
-
   try {
+    console.log('🔍 [getProfilePosts] Starting...')
+    const user = await onCurrentUser()
+    console.log('🔍 [getProfilePosts] User ID:', user?.id)
+
     const profile = await findUser(user.id)
+    console.log('🔍 [getProfilePosts] Profile found:', !!profile, 'hasIntegrations:', !!profile?.integrations)
+    console.log('🔍 [getProfilePosts] Integrations array:', {
+      isArray: Array.isArray(profile?.integrations),
+      length: profile?.integrations?.length || 0,
+      firstIntegration: profile?.integrations?.[0] ? {
+        id: profile.integrations[0].id,
+        hasToken: !!profile.integrations[0].token,
+        tokenLength: profile.integrations[0].token?.length || 0,
+      } : null,
+    })
 
     const integration = profile?.integrations?.[0]
+    console.log('🔍 [getProfilePosts] Integration found:', !!integration, 'hasToken:', !!integration?.token)
+    
     if (!integration || !integration.token) {
-      return { status: 404, data: [] }
+      console.warn('⚠️ [getProfilePosts] No integration or token found')
+      console.warn('⚠️ [getProfilePosts] Debug info:', {
+        hasProfile: !!profile,
+        integrationsLength: profile?.integrations?.length || 0,
+        firstIntegrationExists: !!profile?.integrations?.[0],
+        firstIntegrationHasToken: !!profile?.integrations?.[0]?.token,
+      })
+      return { status: 404, data: { data: [] } }
     }
 
     let token = integration.token
@@ -398,8 +460,9 @@ export const getProfilePosts = async () => {
     }
 
     // ✅ 2) TRY FETCHING MEDIA WITH CURRENT / REFRESHED TOKEN
+    // Include all media types: images, videos (reels), and carousels
     let response = await fetch(
-      `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp&limit=10&access_token=${token}`,
+      `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp,thumbnail_url&limit=50&access_token=${token}`,
       { cache: 'no-store' }
     )
 
@@ -432,26 +495,61 @@ export const getProfilePosts = async () => {
         })
 
         const retry = await fetch(
-          `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp&limit=10&access_token=${token}`,
+          `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp,thumbnail_url&limit=50&access_token=${token}`,
           { cache: 'no-store' }
         )
 
         parsed = await retry.json()
-      } catch (e) {
-        console.log('❌ ERROR refreshing expired IG token:', e)
-        return { status: 401, data: [] }
+        console.log('🔍 [getProfilePosts] Retry response:', { hasData: !!parsed?.data, dataLength: parsed?.data?.length, hasError: !!parsed?.error })
+      } catch (e: any) {
+        console.error('❌ [getProfilePosts] ERROR refreshing expired IG token:', e)
+        console.error('❌ [getProfilePosts] Refresh error details:', { message: e?.message, stack: e?.stack })
+        return { status: 401, data: { data: [] } }
       }
     }
 
     // ✅ 4) NORMAL RETURN
+    console.log('🔍 [getProfilePosts] Parsed response:', {
+      hasData: !!parsed?.data,
+      dataLength: parsed?.data?.length,
+      hasError: !!parsed?.error,
+      errorCode: parsed?.error?.code,
+      errorMessage: parsed?.error?.message,
+    })
+    
+    if (parsed?.error) {
+      console.error('❌ [getProfilePosts] Instagram API error:', parsed.error)
+      return { status: 401, data: { data: [] } }
+    }
+    
     if (parsed?.data?.length > 0) {
+      // Log media types for debugging
+      const mediaTypes = parsed.data.map((item: any) => ({
+        id: item.id,
+        media_type: item.media_type,
+        has_thumbnail: !!item.thumbnail_url,
+        has_media_url: !!item.media_url,
+      }))
+      console.log('✅ [getProfilePosts] Returning', parsed.data.length, 'posts')
+      console.log('🔍 [getProfilePosts] Media types breakdown:', {
+        images: mediaTypes.filter((m: any) => m.media_type === 'IMAGE').length,
+        videos: mediaTypes.filter((m: any) => m.media_type === 'VIDEO').length,
+        carousels: mediaTypes.filter((m: any) => m.media_type === 'CAROUSEL_ALBUM').length,
+        samples: mediaTypes.slice(0, 5),
+      })
       return { status: 200, data: parsed }
     }
 
+    console.warn('⚠️ [getProfilePosts] No posts found, returning empty array')
     return { status: 200, data: { data: [] } }
-  } catch (error) {
-    console.log('❌ ERROR in getProfilePosts:', error)
-    return { status: 500, data: [] }
+  } catch (error: any) {
+    console.error('❌ [getProfilePosts] ERROR:', error)
+    console.error('❌ [getProfilePosts] Error details:', { 
+      message: error?.message, 
+      stack: error?.stack,
+      name: error?.name,
+    })
+    return { status: 500, data: { data: [] } }
   }
 }
 

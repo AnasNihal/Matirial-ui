@@ -1,8 +1,7 @@
 'use client'
 import { onOAuthInstagram } from '@/actions/integrations'
-import { onUserInfo } from '@/actions/user'
 import { Button } from '@/components/ui/button'
-import { useQuery } from '@tanstack/react-query'
+import { useQueryUser } from '@/hooks/user-queries'
 import React from 'react'
 
 type Props = {
@@ -16,14 +15,49 @@ const IntegrationCard = ({ description, icon, strategy, title }: Props) => {
 
   const onInstaOAuth = () => onOAuthInstagram(strategy)
 
-  const { data } = useQuery({
-    queryKey: ['user-profile'],
-    queryFn: onUserInfo,
-  })
+  // ✅ Use the same hook as other components for consistency
+  const { data, isLoading, error, isFetching } = useQueryUser()
 
-  const integrated = data?.data?.integrations.find(
+  // ✅ Safe access to integrations - handle null data
+  const integrations = data?.data?.integrations || []
+  const integrated = integrations.find(
     (integration) => integration.name === strategy
   )
+  
+  // ✅ Show loading state only on initial load (not when refetching)
+  if (isLoading && !data) {
+    console.log('🔍 [IntegrationCard] Loading - showing skeleton')
+    return (
+      <div className="border-2 border-[#3352CC] rounded-2xl gap-x-5 p-5 flex items-center justify-between animate-pulse">
+        <div className="w-12 h-12 bg-gray-700 rounded" />
+        <div className="flex flex-col flex-1 gap-2">
+          <div className="h-6 bg-gray-700 rounded w-32" />
+          <div className="h-4 bg-gray-700 rounded w-48" />
+        </div>
+        <div className="h-10 bg-gray-700 rounded-full w-24" />
+      </div>
+    )
+  }
+  
+  // ✅ Show error state but still render (don't block UI)
+  if (error) {
+    console.error('❌ [IntegrationCard] Error loading user data:', error)
+    console.error('❌ [IntegrationCard] Error details:', {
+      message: error?.message,
+      stack: error?.stack,
+    })
+  }
+  
+  // ✅ Handle case where data is null (user not found in DB yet)
+  if (!data?.data) {
+    console.warn('⚠️ [IntegrationCard] No user data, showing Connect button')
+    console.log('🔍 [IntegrationCard] Data state:', {
+      hasData: !!data,
+      dataStatus: data?.status,
+      isLoading,
+      isFetching,
+    })
+  }
 
   return (
     <div className="border-2 border-[#3352CC] rounded-2xl gap-x-5 p-5 flex items-center justify-between">

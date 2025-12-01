@@ -69,13 +69,13 @@ const AutomationList = (props: Props) => {
   console.log('🔍 [AutomationList] Automations list:', automationsList)
   console.log('🔍 [AutomationList] Automations list length:', automationsList.length)
 
-  // ✅ Build final list with optimistic updates
+  // ✅ Build final list - REMOVED optimistic updates to prevent fake automations
+  // Only show real automations from database, not optimistic ones
   const finalList = useMemo(() => {
-    if (latestVariable && latestVariable?.variables && automationsList.length > 0) {
-      return [latestVariable.variables, ...automationsList]
-    }
+    // Don't add optimistic updates - they cause 404 errors when clicked
+    // The real automation will appear after the mutation completes and query invalidates
     return automationsList
-  }, [latestVariable, automationsList])
+  }, [automationsList])
 
   console.log('🔍 [AutomationList] Final list:', finalList)
   console.log('🔍 [AutomationList] Final list length:', finalList.length)
@@ -103,12 +103,33 @@ const AutomationList = (props: Props) => {
     )
   }
 
-  // ✅ Check if we have automations to display
-  if (!data || !finalList || finalList.length <= 0) {
-    console.log('🔍 [AutomationList] No automations - data:', !!data, 'finalList:', finalList?.length)
+  // ✅ Check if we have valid data with automations - THIS IS THE SUCCESS CASE
+  if (data && data.status === 200 && Array.isArray(data.data) && data.data.length > 0 && finalList && finalList.length > 0) {
+    console.log('✅ [AutomationList] Valid data found, rendering', finalList.length, 'automations')
+    // ✅ Continue to render the list below
+  } else {
+    // ✅ Show loading if still fetching
+    if (isFetching || isLoading) {
+      console.log('🔍 [AutomationList] Still fetching, showing skeleton - isLoading:', isLoading, 'isFetching:', isFetching)
+      return <AutomationListSkeleton />
+    }
+    
+    // ✅ Check if data exists but is empty
+    if (data && data.status === 200 && (!data.data || !Array.isArray(data.data) || data.data.length === 0)) {
+      console.log('🔍 [AutomationList] Empty automations array - data exists but empty')
+      return (
+        <div className="h-[70vh] flex justify-center items-center flex-col gap-y-3">
+          <h3 className="text-lg text-gray-400">No Automations</h3>
+          <CreateAutomation />
+        </div>
+      )
+    }
+    
+    // ✅ No data or invalid status
+    console.log('🔍 [AutomationList] No valid data - data:', !!data, 'dataStatus:', data?.status, 'hasDataArray:', Array.isArray(data?.data), 'dataLength:', data?.data?.length, 'finalList:', finalList?.length)
     return (
       <div className="h-[70vh] flex justify-center items-center flex-col gap-y-3">
-        <h3 className="text-lg text-gray-400">No Automations </h3>
+        <h3 className="text-lg text-gray-400">No Automations</h3>
         <CreateAutomation />
       </div>
     )

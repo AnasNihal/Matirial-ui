@@ -32,6 +32,8 @@ export default function AutomationBuilder({ id }: Props) {
     id: string
     media: string
     caption?: string
+    mediaType?: 'IMAGE' | 'VIDEO' | 'CAROSEL_ALBUM'
+    thumbnail?: string
   } | null>(null)
 
   const [igUsername, setIgUsername] = React.useState('your_account')
@@ -40,6 +42,8 @@ export default function AutomationBuilder({ id }: Props) {
   const [keyword, setKeyword] = React.useState('')
   const [dmText, setDmText] = React.useState('Thanks for your comment! Well DM you more details 😊')
   const [dmEnabled, setDmEnabled] = React.useState(false)
+  const [dmImage, setDmImage] = React.useState<string | null>(null)
+  const [dmLinks, setDmLinks] = React.useState<Array<{ title: string; url: string }>>([])
 
   const [isLive, setIsLive] = React.useState(false)
   const [hasChanges, setHasChanges] = React.useState(false)
@@ -119,34 +123,58 @@ export default function AutomationBuilder({ id }: Props) {
     prevLoadedDataRef.current = data.data
 
     const auto = data.data
+    console.log('🔍 [AutomationBuilder] Processing automation data:', {
+      hasPosts: !!auto.posts,
+      postsLength: auto.posts?.length || 0,
+      hasKeywords: !!auto.keywords,
+      keywordsLength: auto.keywords?.length || 0,
+      hasListener: !!auto.listener,
+      hasUser: !!auto.User,
+      hasIntegrations: !!auto.User?.integrations,
+      integrationsLength: auto.User?.integrations?.length || 0,
+    })
 
     if (auto.posts?.length > 0) {
       const postData = {
         id: auto.posts[0].postid,
         media: auto.posts[0].media,
         caption: auto.posts[0].caption ?? undefined,
+        mediaType: auto.posts[0].mediaType as 'IMAGE' | 'VIDEO' | 'CAROSEL_ALBUM' | undefined,
+        thumbnail: (auto.posts[0] as any).thumbnail || undefined,
       }
+      console.log('🔍 [AutomationBuilder] Setting post data:', { 
+        id: postData.id, 
+        hasMedia: !!postData.media, 
+        hasCaption: !!postData.caption,
+        mediaType: postData.mediaType,
+        hasThumbnail: !!postData.thumbnail,
+      })
       setPreviewPost(postData)
       initialData.current.post = postData
     } else {
+      console.log('🔍 [AutomationBuilder] No posts found, clearing post data')
       setPreviewPost(null)
       initialData.current.post = null
     }
 
     if (auto.keywords?.length > 0) {
+      console.log('🔍 [AutomationBuilder] Setting keyword:', auto.keywords[0].word)
       setKeyword(auto.keywords[0].word)
       initialData.current.keyword = auto.keywords[0].word
     } else {
+      console.log('🔍 [AutomationBuilder] No keywords found, clearing keyword')
       setKeyword('')
       initialData.current.keyword = ''
     }
 
     if (auto.listener?.prompt) {
+      console.log('🔍 [AutomationBuilder] Setting listener prompt, length:', auto.listener.prompt.length)
       setDmText(auto.listener.prompt)
       setDmEnabled(true)
       initialData.current.dmText = auto.listener.prompt
       initialData.current.dmEnabled = true
     } else {
+      console.log('🔍 [AutomationBuilder] No listener found, clearing DM data')
       setDmText('')
       setDmEnabled(false)
       initialData.current.dmText = ''
@@ -154,8 +182,19 @@ export default function AutomationBuilder({ id }: Props) {
     }
 
     const integration = auto?.User?.integrations?.[0]
-    if (integration?.instagramUsername) setIgUsername(integration.instagramUsername)
-    if (integration?.instagramProfilePicture) setIgProfilePic(integration.instagramProfilePicture)
+    console.log('🔍 [AutomationBuilder] Integration data:', {
+      hasIntegration: !!integration,
+      hasUsername: !!integration?.instagramUsername,
+      hasProfilePic: !!integration?.instagramProfilePicture,
+    })
+    if (integration?.instagramUsername) {
+      console.log('🔍 [AutomationBuilder] Setting Instagram username:', integration.instagramUsername)
+      setIgUsername(integration.instagramUsername)
+    }
+    if (integration?.instagramProfilePicture) {
+      console.log('🔍 [AutomationBuilder] Setting Instagram profile picture')
+      setIgProfilePic(integration.instagramProfilePicture)
+    }
 
     setIsLive(auto.active || false)
     setHasChanges(false)
@@ -348,6 +387,8 @@ async function handleActivate() {
             activeStep={activeStep}
             username={igUsername}
             profilePic={igProfilePic}
+            dmImage={dmImage}
+            dmLinks={dmLinks}
           />
         </div>
 
@@ -416,6 +457,10 @@ async function handleActivate() {
               setDmPreview={setDmText}
               dmEnabled={dmEnabled}
               setDmEnabled={setDmEnabled}
+              dmImage={dmImage}
+              setDmImage={setDmImage}
+              dmLinks={dmLinks}
+              setDmLinks={setDmLinks}
             />
           </div>
         </div>

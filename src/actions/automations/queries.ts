@@ -4,7 +4,18 @@ import { client } from '@/lib/prisma'
 import { v4 } from 'uuid'
 
 export const createAutomation = async (clerkId: string, id?: string) => {
-  return await client.user.update({
+  // Check if automation with this ID already exists
+  if (id) {
+    const existing = await client.automation.findUnique({
+      where: { id },
+    })
+    if (existing) {
+      console.warn('⚠️ [createAutomation] Automation with ID already exists:', id)
+      return existing
+    }
+  }
+
+  const result = await client.user.update({
     where: {
       clerkId,
     },
@@ -15,7 +26,18 @@ export const createAutomation = async (clerkId: string, id?: string) => {
         },
       },
     },
+    include: {
+      automations: {
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 1,
+      },
+    },
   })
+
+  // Return the created automation
+  return result.automations[0]
 }
 
 export const getAutomations = async (clerkId: string) => {
@@ -38,6 +60,13 @@ export const getAutomations = async (clerkId: string) => {
 }
 
 export const findAutomation = async (id: string) => {
+  // Validate UUID format before querying
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(id)) {
+    console.error('❌ [findAutomation] Invalid automation ID format:', id)
+    throw new Error(`Invalid automation ID format: ${id}. Expected UUID format.`)
+  }
+  
   const automation = await client.automation.findUnique({
     where: { id },
     include: {

@@ -16,10 +16,15 @@ import { AppDispatch, useAppSelector } from '@/redux/store'
 import { useDispatch } from 'react-redux'
 import { TRIGGER } from '@/redux/slices/automation'
 
-export const useCreateAutomation = (id?: string) => {
+export const useCreateAutomation = () => {
+  const router = useRouter()
+  
   const { isPending, mutate } = useMutationData(
     ['create-automation'],
-    () => createAutomations(id),
+    async (data?: { id?: string }) => {
+      const result = await createAutomations(data?.id)
+      return result
+    },
     'user-automations'
   )
 

@@ -19,10 +19,12 @@ const queryClientConfig = {
       retry: 1,
       retryDelay: 1000,
       
-      // 🔥 NEVER refetch automatically
+      // 🔥 NEVER refetch automatically on window focus/reconnect
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
-      refetchOnMount: false,
+      // ✅ CRITICAL: Fetch on mount if no cache (allows initial load)
+      // Individual hooks can override this if needed
+      refetchOnMount: true,
       
       // 🔥 Show stale data while refetching in background
       refetchInterval: false as const,
