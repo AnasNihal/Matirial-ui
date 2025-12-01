@@ -33,7 +33,7 @@ const DmPanel = ({
       setDmPreview(data.data.listener.prompt)
       setDmEnabled(true)
     }
-  }, [data?.data?.listener])
+  }, [data?.data?.listener, dmPreview, setDmPreview, setDmEnabled])  // ✅ Fix: Add missing dependencies
 
   return (
     <div

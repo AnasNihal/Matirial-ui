@@ -57,25 +57,38 @@ export default function AutomationBuilder({ id }: Props) {
     (data: { state: boolean }) => import('@/actions/automations').then(mod => mod.activateAutomation(id, data.state)),
     undefined  // Don't invalidate queries automatically
   )
-  const { mutate: updateMutate, isPending: isUpdating } = useMutationData(
+  const { mutate: updateMutate, isPending: isUpdating} = useMutationData(
     ['update-automation'],
     async () => {
-      const { savePosts, saveKeyword, saveListener } = await import('@/actions/automations')
-      if (previewPost) {
-        await savePosts(id, [
-          {
-            postid: previewPost.id,
-            media: previewPost.media,
-            caption: previewPost.caption,
-            mediaType: 'IMAGE',
-          },
-        ])
+      const { savePosts, saveKeyword, saveListener, saveTrigger } = await import('@/actions/automations')
+      
+      // ✅ VALIDATION: Check required fields
+      if (!previewPost) {
+        throw new Error('Please select a post before activating')
       }
-      if (keyword) {
-        await saveKeyword(id, keyword)
+      if (!keyword || keyword.trim() === '') {
+        throw new Error('Please enter a keyword before activating')
       }
-      if (dmEnabled) {
-        await saveListener(id, 'MESSAGE', dmText)
+      if (dmEnabled && (!dmText || dmText.trim() === '')) {
+        throw new Error('Please enter a DM message or disable DM')
+      }
+      
+      // ✅ Save trigger first (COMMENT trigger for comment-to-DM automation)
+      await saveTrigger(id, ['COMMENT'])
+      
+      await savePosts(id, [
+        {
+          postid: previewPost.id,
+          media: previewPost.media,
+          caption: previewPost.caption || undefined,  // ✅ Handle null/undefined
+          mediaType: 'IMAGE',
+        },
+      ])
+      
+      await saveKeyword(id, keyword.trim())
+      
+      if (dmEnabled && dmText) {
+        await saveListener(id, 'MESSAGE', dmText.trim())
       }
     },
     undefined  // Don't invalidate queries automatically
@@ -180,13 +193,20 @@ async function handleActivate() {
           },
           onError: (error) => {
             console.error('Failed to activate automation:', error)
+            alert('Failed to activate automation. Please try again.')
             reject(error)
           },
         }
       )
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in handleActivate:', error)
+    // ✅ Show user-friendly error messages
+    if (error.message) {
+      alert(error.message)
+    } else {
+      alert('Failed to activate automation. Please check all fields are filled.')
+    }
   }
 }
 

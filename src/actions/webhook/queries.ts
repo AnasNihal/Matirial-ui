@@ -1,39 +1,74 @@
 import { client } from '@/lib/prisma'
 
-// Match keyword ONLY from ACTIVE automations
+// ✅ IMPROVED: Match keyword AND post together for ACTIVE automations
 export const matchKeyword = async (keyword: string, postId?: string) => {
-  const keywordMatch = await client.keyword.findFirst({
+  // If no postId, we can't verify - used for DMs
+  if (!postId) {
+    return await client.keyword.findFirst({
+      where: {
+        word: { equals: keyword, mode: 'insensitive' },
+        Automation: { active: true },
+      },
+      include: {
+        Automation: {
+          include: { posts: true, trigger: true, listener: true },
+        },
+      },
+    })
+  }
+
+  // ✅ For comments: Find ALL keywords matching this word from ACTIVE automations
+  const allMatches = await client.keyword.findMany({
     where: {
-      word: {
-        equals: keyword,
-        mode: 'insensitive',
-      },
-      Automation: {  // ✅ Capital A - matches Prisma schema
-        active: true,  // ✅ ONLY active automations
-      },
+      word: { equals: keyword, mode: 'insensitive' },
+      Automation: { active: true },
     },
     include: {
-      Automation: {  // ✅ Capital A - matches Prisma schema
-        include: {
-          posts: true,  // Include posts to verify
-        },
+      Automation: {
+        include: { posts: true, trigger: true, listener: true },
       },
     },
   })
 
-  // If postId is provided, verify the automation is monitoring this specific post
-  if (keywordMatch && keywordMatch.Automation && postId) {
-    const hasPost = keywordMatch.Automation.posts.some(
-      (post) => post.postid === postId
-    )
+  console.log(`🔍 Searching for keyword "${keyword}" on post ${postId}`)
+  console.log(`🔍 Found ${allMatches.length} active automation(s) with keyword "${keyword}"`)
+
+  if (allMatches.length === 0) {
+    console.log(`❌ No active automations with keyword "${keyword}" found in database`)
+    console.log(`   💡 TIP: Make sure automation is ACTIVATED and keyword is saved`)
+    return null
+  }
+
+  // ✅ Filter to find which automation is monitoring THIS specific post
+  for (const match of allMatches) {
+    if (!match.Automation) {
+      console.log(`⚠️  Match found but Automation is null`)
+      continue
+    }
+
+    console.log(`   📋 Checking automation ${match.Automation.id}:`)
+    console.log(`      - Active: ${match.Automation.active}`)
+    console.log(`      - Posts count: ${match.Automation.posts.length}`)
+    console.log(`      - Trigger count: ${match.Automation.trigger?.length || 0}`)
+    console.log(`      - Listener: ${match.Automation.listener ? 'Yes' : 'No'}`)
+
+    if (match.Automation.posts.length > 0) {
+      console.log(`      - Post IDs: ${match.Automation.posts.map((p) => p.postid).join(', ')}`)
+    }
+
+    const hasPost = match.Automation.posts.some((post) => post.postid === postId)
     
-    if (!hasPost) {
-      console.log(`❌ Keyword matched but post ${postId} is not in automation`)
-      return null  // Post not in this automation
+    if (hasPost) {
+      console.log(`✅ MATCH! Automation ${match.Automation.id} monitors post ${postId}`)
+      return match
+    } else {
+      console.log(`   ⏭️  Automation ${match.Automation.id} uses keyword "${keyword}" but monitors different post(s)`)
     }
   }
 
-  return keywordMatch
+  console.log(`❌ No active automation found with keyword "${keyword}" for post ${postId}`)
+  console.log(`   💡 TIP: Check that you selected the correct post when setting up automation`)
+  return null
 }
 
 export const getKeywordAutomation = async (
@@ -137,6 +172,15 @@ export const getChatHistory = async (sender: string, reciever: string) => {
     },
     orderBy: { createdAt: 'asc' },
   })
+  
+  // ✅ CRITICAL FIX: Check if history exists before accessing
+  if (history.length === 0) {
+    return {
+      history: [],
+      automationId: null,
+    }
+  }
+  
   const chatSession: {
     role: 'assistant' | 'user'
     content: string
