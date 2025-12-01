@@ -14,6 +14,7 @@ export const useMutationData = (
   onSuccess?: () => void
 ) => {
   const client = useQueryClient()
+  
   const { mutate, isPending } = useMutation({
     mutationKey,
     mutationFn,
@@ -29,7 +30,10 @@ export const useMutationData = (
         },
 
     onSettled: async () => {
-      await client.invalidateQueries({ queryKey: [queryKey] })
+      // 🚀 FAST INVALIDATION: Don't await, let it happen in background
+      if (queryKey && client) {
+        client.invalidateQueries({ queryKey: [queryKey] })
+      }
     },
   })
 

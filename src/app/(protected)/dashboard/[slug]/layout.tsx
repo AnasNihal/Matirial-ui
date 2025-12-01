@@ -1,15 +1,6 @@
-import {
-  dehydrate,
-  HydrationBoundary,
-  QueryClient,
-} from '@tanstack/react-query'
 import InfoBar from '@/components/global/infobar'
 import Sidebar from '@/components/global/sidebar'
 import React from 'react'
-import {
-  PrefetchUserAutnomations,
-  PrefetchUserProfile,
-} from '@/react-query/prefetch'
 
 type Props = {
   children: React.ReactNode
@@ -17,20 +8,12 @@ type Props = {
 }
 
 const Layout = async ({ children, params }: Props) => {
-
-
-  const query = new QueryClient()
-
-  await PrefetchUserProfile(query)
-
-  await PrefetchUserAutnomations(query)
-
+  // ✅ SIMPLIFIED: No server-side prefetch, let client handle it with React Query
   return (
-    <HydrationBoundary state={dehydrate(query)}>
-      <div className="p-3">
-        <Sidebar slug={params.slug} />
-        <div
-          className="
+    <div className="p-3">
+      <Sidebar slug={params.slug} />
+      <div
+        className="
       lg:ml-[250px] 
       lg:pl-10 
       lg:py-5 
@@ -38,12 +21,11 @@ const Layout = async ({ children, params }: Props) => {
       flex-col 
       overflow-auto
       "
-        >
-          <InfoBar slug={params.slug} />
-          {children}
-        </div>
+      >
+        <InfoBar slug={params.slug} />
+        {children}
       </div>
-    </HydrationBoundary>
+    </div>
   )
 }
 

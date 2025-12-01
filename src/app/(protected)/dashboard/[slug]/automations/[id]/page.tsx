@@ -1,10 +1,4 @@
 import { getAutomationInfo } from '@/actions/automations'
-import {
-  dehydrate,
-  HydrationBoundary,
-  QueryClient,
-} from '@tanstack/react-query'
-import { PrefetchUserAutomation } from '@/react-query/prefetch'
 import React from 'react'
 import AutomationBuilder from '@/components/global/automations/builder/automation-builder'
 
@@ -13,21 +7,23 @@ type Props = {
 }
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
-  const info = await getAutomationInfo(params.id)
-  return {
-    title: info.data?.name || 'Automation',
+  try {
+    const info = await getAutomationInfo(params.id)
+    return {
+      title: info.data?.name || 'Automation',
+    }
+  } catch (error) {
+    console.error('❌ [generateMetadata] Error:', error)
+    return {
+      title: 'Automation',
+    }
   }
 }
 
 const Page = async ({ params }: Props) => {
-  const query = new QueryClient()
-  await PrefetchUserAutomation(query, params.id)
-
-  return (
-    <HydrationBoundary state={dehydrate(query)}>
-      <AutomationBuilder id={params.id} />
-    </HydrationBoundary>
-  )
+  // ✅ SIMPLIFIED: Let client-side React Query handle prefetching
+  // Server-side prefetching was causing QueryClient issues
+  return <AutomationBuilder id={params.id} />
 }
 
 export default Page

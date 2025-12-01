@@ -15,6 +15,34 @@ const nextConfig = {
         hostname: 'platform-lookaside.fbsbx.com',
       },
     ],
+    // 🚀 FAST: Optimize images for faster loading
+    formats: ['image/webp'],
+    minimumCacheTTL: 31536000, // 1 year cache
+  },
+  
+  // 🚀 FAST: Compress responses
+  compress: true,
+  
+  // 🚀 FAST: Optimize production builds
+  productionBrowserSourceMaps: false,
+  
+  // 🚀 FAST: Enable SWC minification (faster)
+  swcMinify: true,
+  
+  // 🚀 FAST: Optimize fonts
+  optimizeFonts: true,
+  
+  // 🚀 FAST: Modularize imports (smaller bundles)
+  modularizeImports: {
+    'lucide-react': {
+      transform: 'lucide-react/dist/esm/icons/{{kebabCase member}}',
+    },
+  },
+  
+  // 🚀 FAST: Experimental features for speed
+  experimental: {
+    optimizePackageImports: ['@clerk/nextjs', '@tanstack/react-query', 'sonner'],
+    webVitalsAttribution: ['CLS', 'LCP'],
   },
 }
 

@@ -7,6 +7,7 @@ import { useMutationData, useMutationDataState } from '@/hooks/use-mutation-data
 import { Input } from '@/components/ui/input'
 import { ChevronLeft, ChevronRight, PencilIcon } from 'lucide-react'
 import ActivateAutomationButton from '@/components/global/activate-automation-button'
+import AutomationBuilderSkeleton from '@/components/global/loader/automation-builder-skeleton'
 
 import PhonePreview from './phone-preview'
 import PostPanel from './post-panel'
@@ -18,7 +19,10 @@ type Props = {
 }
 
 export default function AutomationBuilder({ id }: Props) {
-  const { data, refetch } = useQueryAutomation(id)
+  // ✅ This will throw if QueryClientProvider is not set up
+  // Error will be caught by ErrorLogger and logged to terminal
+  const { data, refetch, isLoading } = useQueryAutomation(id)
+  
   const { edit, enableEdit, inputRef, isPending: namePending } = useEditAutomation(id)
   const { latestVariable } = useMutationDataState(['update-automation'])
 
@@ -171,6 +175,7 @@ export default function AutomationBuilder({ id }: Props) {
     setHasChanges(changed)
   }, [previewPost, keyword, dmText, dmEnabled, isLive])
 
+
 async function handleActivate() {
   try {
     await handleUpdate()   // save post + keyword + dmText FIRST
@@ -271,12 +276,9 @@ async function handleActivate() {
     setHasChanges(false)
   }
 
+  // 🚀 ONLY show skeleton on TRUE first load (no cached data)
   if (!data?.data) {
-    return (
-      <div className="h-[70vh] flex items-center justify-center text-text-secondary">
-        Loading automation...
-      </div>
-    )
+    return <AutomationBuilderSkeleton />
   }
 
   return (

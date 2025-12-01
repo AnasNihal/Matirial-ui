@@ -29,25 +29,244 @@ export const createAutomations = async (id?: string) => {
 }
 
 export const getAllAutomations = async () => {
-  const user = await onCurrentUser()
   try {
-    const automations = await getAutomations(user.id)
-    if (automations) return { status: 200, data: automations.automations }
-    return { status: 404, data: [] }
-  } catch (error) {
+    console.log('🔍 [getAllAutomations] Starting...')
+    
+    let user
+    try {
+      user = await onCurrentUser()
+      console.log('🔍 [getAllAutomations] User:', user?.id)
+    } catch (userError) {
+      console.error('❌ [getAllAutomations] User fetch error:', userError)
+      return { status: 401, data: [] }
+    }
+    
+    if (!user || !user.id) {
+      console.error('❌ [getAllAutomations] No user')
+      return { status: 401, data: [] }
+    }
+    
+    console.log('🔍 [getAllAutomations] Fetching from database...')
+    let automations
+    try {
+      automations = await getAutomations(user.id)
+      console.log('🔍 [getAllAutomations] Database result:', {
+        hasAutomations: !!automations,
+        automationsCount: automations?.automations?.length,
+      })
+    } catch (dbError) {
+      console.error('❌ [getAllAutomations] Database error:', dbError)
+      return { status: 500, data: [] }
+    }
+    
+    // ✅ Handle case where user exists but has no automations
+    if (automations && automations.automations) {
+      const automationsList = automations.automations || []
+      console.log('🔍 [getAllAutomations] Automations list length:', automationsList.length)
+      
+      // ✅ CRITICAL FIX: Manual serialization to ensure ONLY plain objects
+      // Prisma objects can have non-serializable properties, so we extract only what we need
+      const serializedAutomations = automationsList.map((automation: any) => {
+        try {
+          // Extract only primitive values from Prisma objects
+          const result: any = {
+            id: String(automation.id || ''),
+            name: String(automation.name || ''),
+            active: Boolean(automation.active ?? false),
+            createdAt: null as string | null,
+            updatedAt: null as string | null,
+            keywords: [] as any[],
+            listener: null as any,
+          }
+          
+          // Handle dates safely
+          if (automation.createdAt) {
+            if (automation.createdAt instanceof Date) {
+              result.createdAt = automation.createdAt.toISOString()
+            } else {
+              try {
+                result.createdAt = new Date(automation.createdAt).toISOString()
+              } catch {
+                result.createdAt = null
+              }
+            }
+          }
+          
+          if (automation.updatedAt) {
+            if (automation.updatedAt instanceof Date) {
+              result.updatedAt = automation.updatedAt.toISOString()
+            } else {
+              try {
+                result.updatedAt = new Date(automation.updatedAt).toISOString()
+              } catch {
+                result.updatedAt = null
+              }
+            }
+          }
+          
+          // Handle keywords array - extract only primitive values
+          if (Array.isArray(automation.keywords)) {
+            result.keywords = automation.keywords.map((k: any) => {
+              if (!k || typeof k !== 'object') return null
+              return {
+                id: String(k.id || ''),
+                word: String(k.word || ''),
+                automationId: String(k.automationId || ''),
+              }
+            }).filter((k: any) => k !== null)
+          }
+          
+          // Handle listener - extract only primitive values
+          if (automation.listener && typeof automation.listener === 'object') {
+            result.listener = {
+              id: String(automation.listener.id || ''),
+              listener: String(automation.listener.listener || ''),
+            }
+          }
+          
+          return result
+        } catch (itemError) {
+          console.error('❌ [getAllAutomations] Error serializing automation item:', itemError)
+          console.error('❌ [getAllAutomations] Problematic automation:', {
+            id: automation?.id,
+            name: automation?.name,
+            hasKeywords: !!automation?.keywords,
+            hasListener: !!automation?.listener,
+          })
+          return null
+        }
+      }).filter((item: any) => item !== null) // Remove any failed serializations
+      
+      console.log('✅ [getAllAutomations] Returning', serializedAutomations.length, 'automations')
+      
+      // ✅ Final validation: Ensure it's serializable
+      let finalResult
+      try {
+        const testString = JSON.stringify(serializedAutomations)
+        console.log('✅ [getAllAutomations] Serialization validation passed, length:', testString.length)
+        
+        // ✅ Create the final result object
+        finalResult = { status: 200, data: serializedAutomations }
+        
+        // ✅ Double-check the result is serializable
+        const resultString = JSON.stringify(finalResult)
+        console.log('✅ [getAllAutomations] Final result serialization passed, length:', resultString.length)
+        console.log('✅ [getAllAutomations] Final result structure:', {
+          hasStatus: 'status' in finalResult,
+          hasData: 'data' in finalResult,
+          statusValue: finalResult.status,
+          dataLength: finalResult.data?.length,
+        })
+        
+        return finalResult
+      } catch (validateError) {
+        console.error('❌ [getAllAutomations] Serialization validation failed:', validateError)
+        console.error('❌ [getAllAutomations] Failed data:', serializedAutomations)
+        return { status: 500, data: [] }
+      }
+    }
+    
+    console.log('⚠️ [getAllAutomations] No automations found')
+    return { status: 200, data: [] }
+  } catch (error: any) {
+    console.error('❌ [getAllAutomations] FATAL ERROR:', error)
+    console.error('❌ [getAllAutomations] Error stack:', error?.stack)
+    console.error('❌ [getAllAutomations] Error message:', error?.message)
     return { status: 500, data: [] }
   }
 }
 
 export const getAutomationInfo = async (id: string) => {
-  await onCurrentUser()
   try {
+    console.log('🔍 [getAutomationInfo] Starting for id:', id)
+    await onCurrentUser()
+    
     const automation = await findAutomation(id)
-    if (automation) return { status: 200, data: automation }
-
-    return { status: 404 }
-  } catch (error) {
-    return { status: 500 }
+    console.log('🔍 [getAutomationInfo] Database result:', {
+      hasAutomation: !!automation,
+      hasKeywords: !!automation?.keywords,
+      hasPosts: !!automation?.posts,
+      hasListener: !!automation?.listener,
+    })
+    
+    if (!automation) {
+      console.warn('⚠️ [getAutomationInfo] Automation not found')
+      return { status: 404, data: null }
+    }
+    
+    // ✅ CRITICAL FIX: Serialize Prisma objects to plain objects
+    const serialized = {
+      id: String(automation.id || ''),
+      name: String(automation.name || ''),
+      active: Boolean(automation.active ?? false),
+      createdAt: automation.createdAt instanceof Date 
+        ? automation.createdAt.toISOString() 
+        : (automation.createdAt ? new Date(automation.createdAt).toISOString() : null),
+      keywords: Array.isArray(automation.keywords) 
+        ? automation.keywords.map((k: any) => ({
+            id: String(k.id || ''),
+            word: String(k.word || ''),
+            automationId: String(k.automationId || ''),
+          }))
+        : [],
+      trigger: Array.isArray(automation.trigger) 
+        ? automation.trigger.map((t: any) => ({
+            id: String(t.id || ''),
+            type: String(t.type || ''),
+            automationId: String(t.automationId || ''),
+          }))
+        : [],
+      posts: Array.isArray(automation.posts) 
+        ? automation.posts.map((p: any) => ({
+            id: String(p.id || ''),
+            postid: String(p.postid || ''),
+            media: String(p.media || ''),
+            caption: p.caption ? String(p.caption) : null,
+            mediaType: String(p.mediaType || 'IMAGE'),
+            automationId: String(p.automationId || ''),
+          }))
+        : [],
+      listener: automation.listener ? {
+        id: String(automation.listener.id || ''),
+        listener: String(automation.listener.listener || ''),
+        prompt: String(automation.listener.prompt || ''),
+        commentReply: automation.listener.commentReply ? String(automation.listener.commentReply) : null,
+        dmCount: Number(automation.listener.dmCount || 0),
+        commentCount: Number(automation.listener.commentCount || 0),
+        automationId: String(automation.listener.automationId || ''),
+      } : null,
+      User: automation.User ? {
+        subscription: automation.User.subscription ? {
+          id: String(automation.User.subscription.id || ''),
+          plan: String(automation.User.subscription.plan || ''),
+        } : null,
+        integrations: Array.isArray(automation.User.integrations) 
+          ? automation.User.integrations.map((i: any) => ({
+              id: String(i.id || ''),
+              token: String(i.token || ''),
+              instagramId: i.instagramId ? String(i.instagramId) : null,
+              instagramUsername: i.instagramUsername ? String(i.instagramUsername) : null,
+              instagramProfilePicture: i.instagramProfilePicture ? String(i.instagramProfilePicture) : null,
+            }))
+          : [],
+      } : null,
+    }
+    
+    // ✅ Validate serialization
+    try {
+      JSON.stringify(serialized)
+      console.log('✅ [getAutomationInfo] Serialization validation passed')
+    } catch (serializeError) {
+      console.error('❌ [getAutomationInfo] Serialization validation failed:', serializeError)
+      return { status: 500, data: null }
+    }
+    
+    console.log('✅ [getAutomationInfo] Returning serialized automation')
+    return { status: 200, data: serialized }
+  } catch (error: any) {
+    console.error('❌ [getAutomationInfo] ERROR:', error)
+    console.error('❌ [getAutomationInfo] Error stack:', error?.stack)
+    return { status: 500, data: null }
   }
 }
 

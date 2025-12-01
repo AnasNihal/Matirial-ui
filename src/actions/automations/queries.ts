@@ -26,7 +26,7 @@ export const getAutomations = async (clerkId: string) => {
     select: {
       automations: {
         orderBy: {
-          createdAt: 'asc',
+          createdAt: 'desc', // ✅ Most recent first
         },
         include: {
           keywords: true,
@@ -61,12 +61,6 @@ export const findAutomation = async (id: string) => {
       },
     },
   })
-
-  // 🔍 DEBUG: Log what we got from database
-  console.log('📊 DATABASE QUERY RESULT:')
-  console.log('User:', automation?.User)
-  console.log('Integrations:', automation?.User?.integrations)
-  console.log('First Integration:', automation?.User?.integrations?.[0])
 
   return automation
 }
