@@ -17,12 +17,17 @@ export const useMutationData = (
   const { mutate, isPending } = useMutation({
     mutationKey,
     mutationFn,
-    onSuccess: (data) => {
-      if (onSuccess) onSuccess()
-      return toast(data?.status === 200 ? 'Success' : 'Error', {
-        description: data.data,
-      })
-    },
+        onSuccess: (response: any) => {
+          if (onSuccess) onSuccess()
+          const description =
+            response && typeof response === 'object'
+              ? response.data ?? response.message ?? 'Success'
+              : 'Success'
+          return toast(response?.status === 200 ? 'Success' : 'Error', {
+            description,
+          })
+        },
+
     onSettled: async () => {
       await client.invalidateQueries({ queryKey: [queryKey] })
     },

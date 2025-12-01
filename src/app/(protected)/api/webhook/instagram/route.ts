@@ -106,31 +106,42 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
   console.log('Media ID:', mediaId)
   console.log('From User ID:', fromUserId)
 
-  // Check if comment matches any keyword
-  const matcher = await matchKeyword(commentText)
+  // ✅ CRITICAL: Check if comment matches keyword from ACTIVE automation on THIS SPECIFIC POST
+  if (!mediaId) {
+    console.log('❌ No media ID provided, cannot verify post')
+    return NextResponse.json({ message: 'No media ID' }, { status: 200 })
+  }
+
+  const matcher = await matchKeyword(commentText, mediaId)
   console.log('Keyword Match:', matcher)
 
   if (!matcher || !matcher.automationId) {
-    console.log('No keyword match found')
+    console.log('❌ No keyword match found for active automation on this post')
     return NextResponse.json({ message: 'No keyword match' }, { status: 200 })
   }
 
-  // Get automation details
+  // Get automation details (already verified as active in matchKeyword)
   const automation = await getKeywordAutomation(matcher.automationId, false)
   
-  if (!automation || !automation.trigger) {
-    console.log('No automation or trigger found')
-    return NextResponse.json({ message: 'No automation' }, { status: 200 })
+  if (!automation) {
+    console.log('❌ Automation not found or not active')
+    return NextResponse.json({ message: 'No active automation' }, { status: 200 })
   }
 
-  // Check if this post is being monitored
-  if (mediaId) {
-    const automationPost = await getKeywordPost(mediaId, automation.id)
-    if (!automationPost) {
-      console.log('Post not in automation list')
-      return NextResponse.json({ message: 'Post not monitored' }, { status: 200 })
-    }
+  if (!automation.trigger || automation.trigger.length === 0) {
+    console.log('❌ No trigger configured for automation')
+    return NextResponse.json({ message: 'No trigger' }, { status: 200 })
   }
+
+  // ✅ Double-check: Verify this post is in the automation's post list
+  const hasPost = automation.posts.some((post) => post.postid === mediaId)
+  if (!hasPost) {
+    console.log(`❌ Post ${mediaId} not in automation ${automation.id}`)
+    return NextResponse.json({ message: 'Post not in automation' }, { status: 200 })
+  }
+
+  console.log(`✅ Automation ${automation.id} is ACTIVE and monitoring post ${mediaId}`)
+  console.log(`✅ Keyword "${matcher.word}" matched!`)
 
   const token = automation.User?.integrations[0]?.token
   if (!token) {
@@ -265,15 +276,24 @@ async function handleMessagingEvent(entry: any, webhook_payload: any) {
   console.log('Message Text:', messageText)
   console.log('Sender ID:', senderId)
 
-  // Check for keyword match
+  // ✅ Check for keyword match from ACTIVE automation (no postId for DMs)
   const matcher = await matchKeyword(messageText)
 
   if (matcher && matcher.automationId) {
     const automation = await getKeywordAutomation(matcher.automationId, true)
     
-    if (!automation || !automation.trigger) {
-      return NextResponse.json({ message: 'No automation' }, { status: 200 })
+    if (!automation) {
+      console.log('❌ Automation not found or not active')
+      return NextResponse.json({ message: 'No active automation' }, { status: 200 })
     }
+
+    if (!automation.trigger || automation.trigger.length === 0) {
+      console.log('❌ No trigger configured')
+      return NextResponse.json({ message: 'No trigger' }, { status: 200 })
+    }
+
+    console.log(`✅ DM automation ${automation.id} is ACTIVE`)
+    console.log(`✅ Keyword "${matcher.word}" matched in DM!`)
 
     const token = automation.User?.integrations[0]?.token
     if (!token) {

@@ -17,6 +17,9 @@ export const useQueryAutomation = (id: string) => {
   return useQuery({
     queryKey: ['automation-info',id,'v2'],
     queryFn: () => getAutomationInfo(id),
+    refetchOnWindowFocus: false,  // Don't refetch when window gets focus
+    refetchOnMount: false,  // Don't refetch when component remounts
+    staleTime: Infinity,  // Data never becomes stale, won't auto-refetch
   })
 }
 

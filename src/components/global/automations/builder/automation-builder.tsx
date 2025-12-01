@@ -3,7 +3,7 @@
 import React from 'react'
 import { useQueryAutomation } from '@/hooks/user-queries'
 import { useEditAutomation } from '@/hooks/use-automations'
-import { useMutationDataState } from '@/hooks/use-mutation-data'
+import { useMutationData, useMutationDataState } from '@/hooks/use-mutation-data'
 import { Input } from '@/components/ui/input'
 import { ChevronLeft, ChevronRight, PencilIcon } from 'lucide-react'
 import ActivateAutomationButton from '@/components/global/activate-automation-button'
@@ -18,18 +18,18 @@ type Props = {
 }
 
 export default function AutomationBuilder({ id }: Props) {
-  const { data } = useQueryAutomation(id)
-  const { edit, enableEdit, inputRef, isPending } = useEditAutomation(id)
+  const { data, refetch } = useQueryAutomation(id)
+  const { edit, enableEdit, inputRef, isPending: namePending } = useEditAutomation(id)
   const { latestVariable } = useMutationDataState(['update-automation'])
 
   const [activeStep, setActiveStep] = React.useState<'post' | 'keyword' | 'dm'>('post')
+
   const [previewPost, setPreviewPost] = React.useState<{
     id: string
     media: string
     caption?: string
   } | null>(null)
 
-  // IG DATA - This is what you need!
   const [igUsername, setIgUsername] = React.useState('your_account')
   const [igProfilePic, setIgProfilePic] = React.useState<string | undefined>(undefined)
 
@@ -37,50 +37,219 @@ export default function AutomationBuilder({ id }: Props) {
   const [dmText, setDmText] = React.useState('Thanks for your comment! Well DM you more details 😊')
   const [dmEnabled, setDmEnabled] = React.useState(false)
 
-  // Load data once
+  const [isLive, setIsLive] = React.useState(false)
+  const [hasChanges, setHasChanges] = React.useState(false)
+
+  const prevLoadedDataRef = React.useRef<any>(null)
+  const skipNextDataUpdateRef = React.useRef(false)
+  const isInitialLoadRef = React.useRef(true)
+
+  const initialData = React.useRef({
+    post: null as typeof previewPost,
+    keyword: '',
+    dmText: '',
+    dmEnabled: false,
+  })
+
+  // Mutations for activate & update
+  const { mutate: activateMutate, isPending: isActivating } = useMutationData(
+    ['activate-automation'],
+    (data: { state: boolean }) => import('@/actions/automations').then(mod => mod.activateAutomation(id, data.state)),
+    undefined  // Don't invalidate queries automatically
+  )
+  const { mutate: updateMutate, isPending: isUpdating } = useMutationData(
+    ['update-automation'],
+    async () => {
+      const { savePosts, saveKeyword, saveListener } = await import('@/actions/automations')
+      if (previewPost) {
+        await savePosts(id, [
+          {
+            postid: previewPost.id,
+            media: previewPost.media,
+            caption: previewPost.caption,
+            mediaType: 'IMAGE',
+          },
+        ])
+      }
+      if (keyword) {
+        await saveKeyword(id, keyword)
+      }
+      if (dmEnabled) {
+        await saveListener(id, 'MESSAGE', dmText)
+      }
+    },
+    undefined  // Don't invalidate queries automatically
+  )
+
   React.useEffect(() => {
     if (!data?.data) return
+    
+    // Skip update if we just saved manually (prevents reset)
+    if (skipNextDataUpdateRef.current) {
+      console.log('Skipping data update - we just saved manually')
+      skipNextDataUpdateRef.current = false
+      return
+    }
+    
+    // Only update from server data on initial load
+    if (!isInitialLoadRef.current) {
+      console.log('Skipping data update - not initial load, using local state')
+      return
+    }
+    
+    console.log('Initial load: updating local state from server data')
+    isInitialLoadRef.current = false
+    prevLoadedDataRef.current = data.data
 
     const auto = data.data
 
-    // Load POST
     if (auto.posts?.length > 0) {
-      setPreviewPost({
+      const postData = {
         id: auto.posts[0].postid,
         media: auto.posts[0].media,
         caption: auto.posts[0].caption ?? undefined,
-      })
+      }
+      setPreviewPost(postData)
+      initialData.current.post = postData
+    } else {
+      setPreviewPost(null)
+      initialData.current.post = null
     }
 
-    // Load KEYWORD
     if (auto.keywords?.length > 0) {
       setKeyword(auto.keywords[0].word)
+      initialData.current.keyword = auto.keywords[0].word
+    } else {
+      setKeyword('')
+      initialData.current.keyword = ''
     }
 
-    // Load DM
     if (auto.listener?.prompt) {
       setDmText(auto.listener.prompt)
       setDmEnabled(true)
+      initialData.current.dmText = auto.listener.prompt
+      initialData.current.dmEnabled = true
+    } else {
+      setDmText('')
+      setDmEnabled(false)
+      initialData.current.dmText = ''
+      initialData.current.dmEnabled = false
     }
 
-    // ✅ THIS IS THE KEY PART - LOAD INSTAGRAM DATA
     const integration = auto?.User?.integrations?.[0]
+    if (integration?.instagramUsername) setIgUsername(integration.instagramUsername)
+    if (integration?.instagramProfilePicture) setIgProfilePic(integration.instagramProfilePicture)
 
-    console.log('🔥 Integration Data:', integration)
-    console.log('📸 Instagram Username:', integration?.instagramUsername)
-    console.log('🖼️ Instagram Profile Pic:', integration?.instagramProfilePicture)
-
-    if (integration?.instagramUsername) {
-      setIgUsername(integration.instagramUsername)
-      console.log('✅ Username set to:', integration.instagramUsername)
-    }
-
-    if (integration?.instagramProfilePicture) {
-      setIgProfilePic(integration.instagramProfilePicture)
-      console.log('✅ Profile pic set to:', integration.instagramProfilePicture)
-    }
-
+    setIsLive(auto.active || false)
+    setHasChanges(false)
   }, [data?.data])
+
+  React.useEffect(() => {
+    if (!isLive) {
+      setHasChanges(false)
+      return
+    }
+    const changed =
+      previewPost?.id !== initialData.current.post?.id ||
+      keyword !== initialData.current.keyword ||
+      dmText !== initialData.current.dmText ||
+      dmEnabled !== initialData.current.dmEnabled
+
+    setHasChanges(changed)
+  }, [previewPost, keyword, dmText, dmEnabled, isLive])
+
+async function handleActivate() {
+  try {
+    await handleUpdate()   // save post + keyword + dmText FIRST
+    await new Promise<void>((resolve, reject) => {
+      activateMutate(
+        { state: true },
+        {
+          onSuccess: () => {
+            skipNextDataUpdateRef.current = true
+            setIsLive(true)
+            setHasChanges(false)
+            // Update initial data to reflect the new state
+            initialData.current = {
+              post: previewPost,
+              keyword,
+              dmText,
+              dmEnabled,
+            }
+            resolve()
+          },
+          onError: (error) => {
+            console.error('Failed to activate automation:', error)
+            reject(error)
+          },
+        }
+      )
+    })
+  } catch (error) {
+    console.error('Error in handleActivate:', error)
+  }
+}
+
+
+  async function handleDeactivate() {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        activateMutate(
+          { state: false },
+          {
+            onSuccess: () => {
+              skipNextDataUpdateRef.current = true
+              setIsLive(false)
+              setHasChanges(false)
+              resolve()
+            },
+            onError: (error) => {
+              console.error('Failed to deactivate automation:', error)
+              reject(error)
+            },
+          }
+        )
+      })
+    } catch (error) {
+      console.error('Error in handleDeactivate:', error)
+    }
+  }
+
+  async function handleUpdate() {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        updateMutate(undefined, {
+          onSuccess: () => {
+            skipNextDataUpdateRef.current = true
+            setHasChanges(false)
+            // Update initial data after successful update
+            initialData.current = {
+              post: previewPost,
+              keyword,
+              dmText,
+              dmEnabled,
+            }
+            resolve()
+          },
+          onError: (error) => {
+            console.error('Failed to update automation:', error)
+            reject(error)
+          },
+        })
+      })
+    } catch (error) {
+      console.error('Error in handleUpdate:', error)
+      throw error
+    }
+  }
+
+  function handleDiscard() {
+    setPreviewPost(initialData.current.post)
+    setKeyword(initialData.current.keyword)
+    setDmText(initialData.current.dmText)
+    setDmEnabled(initialData.current.dmEnabled)
+    setHasChanges(false)
+  }
 
   if (!data?.data) {
     return (
@@ -89,9 +258,6 @@ export default function AutomationBuilder({ id }: Props) {
       </div>
     )
   }
-
-  console.log('🎨 Rendering with username:', igUsername)
-  console.log('🎨 Rendering with profile pic:', igProfilePic)
 
   return (
     <div className="flex flex-col gap-y-8">
@@ -112,7 +278,7 @@ export default function AutomationBuilder({ id }: Props) {
               {edit ? (
                 <Input
                   ref={inputRef}
-                  placeholder={isPending ? latestVariable?.variables : 'Add a new name'}
+                  placeholder={namePending ? latestVariable?.variables : 'Add a new name'}
                   className="bg-transparent h-auto outline-none text-base border-none p-0"
                 />
               ) : (
@@ -134,7 +300,17 @@ export default function AutomationBuilder({ id }: Props) {
           <span className="hidden md:inline text-xs text-text-secondary/70">
             Changes are saved automatically
           </span>
-          <ActivateAutomationButton id={id} />
+
+          <ActivateAutomationButton
+            id={id}
+            isLive={isLive}
+            hasChanges={hasChanges}
+            onActivate={handleActivate}
+            onDeactivate={handleDeactivate}
+            onUpdate={handleUpdate}
+            onDiscard={handleDiscard}
+            isPending={isActivating || isUpdating}
+          />
         </div>
       </div>
 

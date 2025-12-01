@@ -1,36 +1,100 @@
-import { Button } from '@/components/ui/button'
-import { Loader2 } from 'lucide-react'
-import React from 'react'
-import { useQueryAutomation } from '@/hooks/user-queries'
-import { useMutationData } from '@/hooks/use-mutation-data'
-import { activateAutomation } from '@/actions/automations'
-import { ActiveAutomation } from '@/icons/active-automation'
+  import { Button } from '@/components/ui/button'
+  import { Loader2 } from 'lucide-react'
+  import React, { useState } from 'react'
+  import { ActiveAutomation } from '@/icons/active-automation'
 
-type Props = {
-  id: string
-}
+  type Props = {
+    id: string
+    isLive: boolean
+    hasChanges: boolean
+    onActivate: () => Promise<void>
+    onDeactivate: () => Promise<void>
+    onUpdate: () => Promise<void>
+    onDiscard: () => void
+    isPending: boolean
+  }
 
-const ActivateAutomationButton = ({ id }: Props) => {
-  const { data } = useQueryAutomation(id)
-  const { mutate, isPending } = useMutationData(
-    ['activate'],
-    (data: { state: boolean }) => activateAutomation(id, data.state),
-    'automation-info'
-  )
+  const ActivateAutomationButton = ({
+    id,
+    isLive,
+    hasChanges,
+    onActivate,
+    onDeactivate,
+    onUpdate,
+    onDiscard,
+    isPending,
+  }: Props) => {
+    const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  return (
-    <Button
-      disabled={isPending}
-      onClick={() => mutate({ state: !data?.data?.active })}
-      className="lg:px-10 bg-gradient-to-br hover:opacity-80 text-white rounded-full from-[#3352CC] font-medium to-[#1C2D70] ml-4"
-    >
-      {isPending ? <Loader2 className="animate-spin" /> : <ActiveAutomation />}
+    if (!isLive) {
+      return (
+        <Button
+          disabled={isPending}
+          onClick={onActivate}
+          className="lg:px-10 bg-gradient-to-br hover:opacity-80 text-white rounded-full from-[#3352CC] font-medium to-[#1C2D70] ml-4"
+        >
+          {isPending ? <Loader2 className="animate-spin mr-2" /> : <ActiveAutomation />}
+          <p className="lg:inline hidden">Activate</p>
+        </Button>
+      )
+    }
 
-      <p className="lg:inline hidden">
-        {data?.data?.active ? 'Disable' : 'Activate'}
-      </p>
-    </Button>
-  )
-}
+    if (isLive && !hasChanges) {
+      return (
+        <Button
+          disabled={isPending}
+          onClick={onDeactivate}
+          className="lg:px-10 bg-gradient-to-br hover:opacity-80 text-white rounded-full from-[#D53F3F] font-medium to-[#802020] ml-4"
+        >
+          {isPending ? <Loader2 className="animate-spin mr-2" /> : <ActiveAutomation />}
+          <p className="lg:inline hidden">Deactivate</p>
+        </Button>
+      )
+    }
 
-export default ActivateAutomationButton
+    return (
+      <div className="relative ml-4 inline-flex items-center">
+        <Button
+          disabled={isPending}
+          onClick={onUpdate}
+          className="lg:px-6 bg-gradient-to-br hover:opacity-80 text-white rounded-full from-[#22C55E] font-medium to-[#166534] mr-2"
+        >
+          {isPending ? <Loader2 className="animate-spin mr-2" /> : <ActiveAutomation />}
+          <p className="lg:inline hidden">Update</p>
+        </Button>
+        <button
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+          aria-label="More options"
+          className="bg-gray-800 hover:bg-gray-700 p-2 rounded-full"
+          type="button"
+        >
+          ▼
+        </button>
+
+        {dropdownOpen && (
+          <div className="absolute right-0 mt-10 w-48 bg-gray-900 border border-gray-700 rounded shadow-lg z-50">
+            <button
+              className="block w-full px-4 py-2 text-left text-white hover:bg-gray-700"
+              onClick={() => {
+                setDropdownOpen(false)
+                onDeactivate()
+              }}
+            >
+              Stop Automation
+            </button>
+            <button
+              className="block w-full px-4 py-2 text-left text-white hover:bg-gray-700"
+              onClick={() => {
+                setDropdownOpen(false)
+                onDiscard()
+              }}
+            >
+              Discard Changes
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  export default ActivateAutomationButton

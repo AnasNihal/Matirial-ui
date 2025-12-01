@@ -1,14 +1,39 @@
 import { client } from '@/lib/prisma'
 
-export const matchKeyword = async (keyword: string) => {
-  return await client.keyword.findFirst({
+// Match keyword ONLY from ACTIVE automations
+export const matchKeyword = async (keyword: string, postId?: string) => {
+  const keywordMatch = await client.keyword.findFirst({
     where: {
       word: {
         equals: keyword,
         mode: 'insensitive',
       },
+      Automation: {  // ✅ Capital A - matches Prisma schema
+        active: true,  // ✅ ONLY active automations
+      },
+    },
+    include: {
+      Automation: {  // ✅ Capital A - matches Prisma schema
+        include: {
+          posts: true,  // Include posts to verify
+        },
+      },
     },
   })
+
+  // If postId is provided, verify the automation is monitoring this specific post
+  if (keywordMatch && keywordMatch.Automation && postId) {
+    const hasPost = keywordMatch.Automation.posts.some(
+      (post) => post.postid === postId
+    )
+    
+    if (!hasPost) {
+      console.log(`❌ Keyword matched but post ${postId} is not in automation`)
+      return null  // Post not in this automation
+    }
+  }
+
+  return keywordMatch
 }
 
 export const getKeywordAutomation = async (
@@ -18,10 +43,12 @@ export const getKeywordAutomation = async (
   return await client.automation.findUnique({
     where: {
       id: automationId,
+      active: true,  // ✅ ONLY get if automation is active
     },
 
     include: {
       dms: dm,
+      posts: true,  // ✅ Include posts to verify
       trigger: {
         where: {
           type: dm ? 'DM' : 'COMMENT',

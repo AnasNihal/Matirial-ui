@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
+import React from 'react'
 
 type SelectedPost = {
   id: string
@@ -28,44 +29,108 @@ export default function PhonePreview({
   username = 'your_account',
   profilePic,
 }: Props) {
+  // ------- LOGS (so you can debug easily) -------
+  console.log('📱 PhonePreview -> props:', {
+    username,
+    profilePic,
+    activeStep,
+    keyword,
+    dmText,
+    selectedPost,
+  })
+
   const hasPost = !!selectedPost
 
-  console.log('📱 PhonePreview received username:', username)
-  console.log('📱 PhonePreview received profilePic:', profilePic)
+  // small helper to render avatar fallback circle
+  const AvatarFallback = ({ name, size = 32 }: { name: string; size?: number }) => {
+    const initial = name ? name.charAt(0).toUpperCase() : 'I'
+    const s = size
+    return (
+      <div
+        style={{
+          width: s,
+          height: s,
+          borderRadius: s / 2,
+        }}
+        className="flex items-center justify-center text-[11px] font-semibold"
+      >
+        <div
+          className="rounded-full flex items-center justify-center"
+          style={{
+            width: s,
+            height: s,
+            background:
+              'linear-gradient(135deg,#f58529 0%,#dd2a7b 40%,#8134af 60%,#515bd4 100%)',
+            color: 'white',
+          }}
+        >
+          {initial}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full flex justify-center">
-      <div className="relative w-[320px] h-[640px] rounded-[38px] border-[6px] border-[#111] bg-black overflow-hidden shadow-2xl">
-        {/* TOP BAR */}
-        <div className="h-10 border-b border-[#222] flex items-center justify-center text-white text-sm font-semibold relative">
-          <span className="absolute left-4 text-xl">‹</span>
-          POSTS
-        </div>
-
-        {/* ✅ USER BAR WITH REAL INSTAGRAM DATA */}
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-[#222]">
-          {profilePic ? (
-            <Image
-              src={profilePic}
-              width={28}
-              height={28}
-              alt="profile"
-              className="rounded-full object-cover"
-              unoptimized
-              onError={() => console.log('❌ Image failed to load')}
-              onLoad={() => console.log('✅ Image loaded successfully')}
-            />
-          ) : (
-            <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-pink-500 to-yellow-400 flex items-center justify-center text-[10px] font-bold">
-              {username.charAt(0).toUpperCase()}
+      <div
+        className="relative overflow-hidden rounded-[28px] shadow-2xl"
+        style={{ width: 340, height: 700, background: '#000' }}
+      >
+        {/* ---------------- STATUS / TOP NAV ---------------- */}
+        <div className="pt-3 pb-1 px-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button className="text-white/80 text-xl leading-none">‹</button>
+              <div className="text-sm text-white font-medium">POSTS</div>
             </div>
-          )}
 
-          <span className="text-white text-xs font-medium">{username}</span>
+            <div className="flex items-center gap-3">
+              <button className="text-white/70 text-lg">⋯</button>
+            </div>
+          </div>
         </div>
 
-        {/* POST AREA */}
-        <div className="relative w-full h-[320px] flex items-center justify-center bg-black">
+        {/* ---------------- USER BAR (IG-like) ---------------- */}
+        <div className="px-3 py-2 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {profilePic ? (
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700">
+                  <Image
+                    src={profilePic}
+                    width={32}
+                    height={32}
+                    alt="profile"
+                    className="object-cover"
+                    unoptimized
+                    onLoad={() => console.log('✅ profile image loaded')}
+                    onError={() => console.log('❌ profile image failed to load')}
+                  />
+                </div>
+              ) : (
+                <AvatarFallback name={username ?? 'I'} size={32} />
+              )}
+
+              <div className="flex flex-col leading-tight">
+                <div className="text-sm text-white font-semibold">
+                  {username}
+                </div>
+                <div className="text-[11px] text-white/60">Original audio</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button className="text-white/70 text-lg">🔍</button>
+              <button className="text-white/70 text-lg">⋯</button>
+            </div>
+          </div>
+        </div>
+
+        {/* ---------------- POST AREA ---------------- */}
+        <div
+          className="relative bg-black flex items-center justify-center"
+          style={{ height: 360 }}
+        >
           {hasPost ? (
             <Image
               src={selectedPost!.media}
@@ -73,142 +138,195 @@ export default function PhonePreview({
               fill
               className="object-contain"
               unoptimized
+              onLoad={() => console.log('✅ post image loaded')}
+              onError={() => console.log('❌ post image failed to load')}
             />
           ) : (
-            <div className="w-[250px] h-[250px] border border-dashed border-[#444] flex items-center justify-center text-[#9ca3af] text-xs text-center px-4 rounded-lg">
-              You havent picked a post or reel yet
+            <div className="w-[280px] h-[280px] rounded-md border border-dashed border-white/10 flex items-center justify-center text-center px-4">
+              <div className="text-white/60 text-[13px]">
+                You haven’t picked a post or reel for your automation yet
+              </div>
             </div>
           )}
         </div>
 
-        {/* ACTION BAR */}
-        <div className="px-3 pt-2 flex justify-between text-white text-lg">
-          <div className="flex gap-4">
-            <span>♡</span>
-            <span>💬</span>
-            <span>✈</span>
+        {/* ---------------- ACTIONS & CAPTION SNIPPET ---------------- */}
+        <div className="px-4 pt-3">
+          <div className="flex items-center justify-between text-white text-lg">
+            <div className="flex items-center gap-4">
+              <button className="text-white/90">♡</button>
+              <button className="text-white/90">💬</button>
+              <button className="text-white/90">✈️</button>
+            </div>
+
+            <div className="text-white/90">🔖</div>
           </div>
-          <span>🔖</span>
+
+          <div className="mt-3 text-[13px] text-white/80">
+            {hasPost && selectedPost?.caption ? (
+              <>
+                <span className="font-semibold mr-2">{username}</span>
+                <span>
+                  {selectedPost.caption.length > 120
+                    ? selectedPost.caption.slice(0, 120) + '…'
+                    : selectedPost.caption}
+                </span>
+              </>
+            ) : (
+              <div className="text-white/60">View all comments</div>
+            )}
+          </div>
         </div>
 
-        <div className="px-3 text-xs text-gray-400">View all comments</div>
+        {/* ---------------- BOTTOM NAV (fake IG) ---------------- */}
+        <div
+          className="absolute bottom-12 left-0 right-0 px-4"
+          style={{ pointerEvents: 'none' }}
+        >
+          <div className="flex justify-between items-center text-white/60">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-sm">
+                🏠
+              </div>
+              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-sm">
+                🔍
+              </div>
+              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-sm">
+                ⊕
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-sm">
+                ♫
+              </div>
+            </div>
+          </div>
+        </div>
 
-        {/* COMMENT VIEW */}
+        {/* ---------------- COMMENT SHEET (ZORCHA style) ---------------- */}
         <AnimatePresence>
           {activeStep === 'keyword' && (
             <motion.div
-              initial={{ y: 200, opacity: 0 }}
+              initial={{ y: 400, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 200, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="absolute bottom-0 left-0 right-0 bg-[#181818] text-white rounded-t-2xl px-4 py-4 text-xs z-20"
+              exit={{ y: 400, opacity: 0 }}
+              transition={{ duration: 0.28 }}
+              className="absolute left-3 right-3 bottom-3 bg-[#1f1f1f] rounded-2xl border border-white/6 z-30"
+              style={{ overflow: 'hidden' }}
             >
-              <div className="w-12 h-1 bg-gray-600 rounded-full mx-auto mb-4"></div>
-              <p className="text-center font-medium text-sm mb-4">Comments</p>
-
-              {/* User comment */}
-              <div className="flex gap-2 mb-4">
-                <div className="h-8 w-8 bg-[#333] rounded-full" />
-                <div>
-                  <div className="bg-[#2a2a2a] px-3 py-2 rounded-2xl rounded-tl-sm">
-                    <span className="font-semibold">User</span> {keyword || 'hello'}
-                  </div>
-                  <span className="text-[11px] text-gray-400 mt-1 block">Reply</span>
-                </div>
+              <div className="px-4 pt-3 pb-2 flex items-center justify-center">
+                <div className="w-12 h-1 rounded-full bg-white/40" />
               </div>
 
-              {/* Owner reply */}
-              <div className="flex gap-2">
-                {profilePic ? (
-                  <Image
-                    src={profilePic}
-                    width={32}
-                    height={32}
-                    alt="profile"
-                    className="rounded-full object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <div className="h-8 w-8 bg-[#333] rounded-full" />
-                )}
-                <div>
-                  <div className="bg-[#2a2a2a] px-3 py-2 rounded-2xl rounded-tl-sm">
-                    <span className="font-semibold">{username}</span> Youre all set 🎉
+              <div className="px-4 pb-4 text-white">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-center text-sm font-semibold">Comments</div>
+                  <div className="text-white/60 text-sm">✈</div>
+                </div>
+
+                {/* Example comment (user) */}
+                <div className="flex gap-3 mb-3 items-start">
+                  <div className="w-8 h-8 rounded-full bg-white/7 flex items-center justify-center text-xs">
+                    U
                   </div>
-                  <span className="text-[11px] text-gray-400 mt-1 block">Reply</span>
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold">User</div>
+                    <div className="text-[13px] text-white/70">{keyword || 'Leaves a new comment'}</div>
+                    <div className="text-[12px] text-white/50 mt-2">Reply</div>
+                  </div>
+                  <div className="text-white/60">♡</div>
+                </div>
+
+                {/* Owner reply (with profilePic fallback) */}
+                <div className="flex gap-3 items-start">
+                  <div className="w-8 h-8 rounded-full overflow-hidden">
+                    {profilePic ? (
+                      <Image
+                        src={profilePic}
+                        width={32}
+                        height={32}
+                        alt="owner"
+                        className="object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-white/6 flex items-center justify-center"> C </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="text-[13px] font-semibold">{username}</div>
+                    <div className="text-[13px] text-white/70">Youre all set 🎉</div>
+                    <div className="text-[12px] text-white/50 mt-2">Reply</div>
+                  </div>
+                  <div className="text-white/60">♡</div>
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* DM VIEW */}
+        {/* ---------------- DM SCREEN (overlay) ---------------- */}
         <AnimatePresence>
           {activeStep === 'dm' && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="absolute inset-0 bg-black z-30 flex flex-col"
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 z-40"
             >
-              {/* Header */}
-              <div className="h-12 border-b border-[#222] flex items-center px-3 justify-between text-white">
-                <span>‹</span>
-
-                <div className="flex items-center gap-2">
-                  {profilePic ? (
-                    <Image
-                      src={profilePic}
-                      width={24}
-                      height={24}
-                      alt="profile"
-                      className="rounded-full object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="h-6 w-6 bg-[#444] rounded-full"></div>
-                  )}
-                  <span className="text-xs">{username}</span>
-                </div>
-
-                <div className="flex gap-3">
-                  <span>📞</span>
-                  <span>ⓘ</span>
-                </div>
-              </div>
-
-              {/* Messages */}
-              <div className="flex-1 p-3 flex flex-col justify-end gap-3">
-                {selectedPost && (
-                  <div className="bg-[#111] w-44 rounded-xl overflow-hidden border border-[#333]">
-                    <div className="relative h-[120px]">
-                      <Image
-                        src={selectedPost.media}
-                        alt="product"
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    </div>
-                    <div className="p-2 text-[11px]">
-                      {selectedPost.caption || 'Selected product'}
+              <div className="absolute inset-0 bg-black/90 p-4 flex flex-col">
+                {/* header */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <button className="text-white/80 text-xl leading-none">‹</button>
+                    {profilePic ? (
+                      <div className="w-8 h-8 rounded-full overflow-hidden">
+                        <Image src={profilePic} width={32} height={32} alt="p" unoptimized />
+                      </div>
+                    ) : (
+                      <AvatarFallback name={username} size={32} />
+                    )}
+                    <div>
+                      <div className="text-sm text-white font-semibold">{username}</div>
+                      <div className="text-xs text-white/60">Active now</div>
                     </div>
                   </div>
-                )}
-
-                <div className="self-end max-w-[80%] bg-blue-600 px-3 py-2 rounded-2xl text-[12px]">
-                  {dmText || "Thanks for your comment! We'll DM you soon."}
+                  <div className="flex items-center gap-3 text-white/70">
+                    <button>📞</button>
+                    <button>ⓘ</button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Input bar */}
-              <div className="h-12 border-t border-[#222] px-3 flex items-center gap-2 text-gray-400 text-xs">
-                <div className="h-8 w-8 bg-blue-600 rounded-full text-white flex items-center justify-center">
-                  +
+                {/* messages area (static placeholder) */}
+                <div className="flex-1 overflow-auto">
+                  <div className="flex flex-col gap-3">
+                    <div className="text-white/60 text-sm mb-3">This is a preview of the DM thread</div>
+
+                    <div className="self-start bg-white/6 text-white p-3 rounded-2xl max-w-[72%]">
+                      Hey! Thanks for reaching out — this DM preview appears here.
+                    </div>
+
+                    <div className="self-end bg-blue-600 text-white p-3 rounded-2xl max-w-[72%]">
+                      {dmText || "Thanks for your comment! We'll DM you soon."}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 bg-[#1a1a1a] rounded-full px-3 py-2">Message...</div>
-                🙂
+
+                {/* composer */}
+                <div className="mt-3">
+                  <div className="bg-white/6 rounded-full px-3 py-2 flex items-center gap-3">
+                    <button className="text-white/70">＋</button>
+                    <input
+                      className="bg-transparent outline-none text-white placeholder:text-white/50 flex-1"
+                      placeholder="Message..."
+                      value={dmText}
+                      readOnly
+                    />
+                    <button className="text-white/70">📎</button>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}

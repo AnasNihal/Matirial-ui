@@ -1,10 +1,8 @@
 'use client'
 
 import { useQueryAutomationPosts } from '@/hooks/user-queries'
-import { useAutomationPosts } from '@/hooks/use-automations'
 import Image from 'next/image'
 import { InstagramPostProps } from '@/types/posts.type'
-import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 
 type Props = {
@@ -17,7 +15,6 @@ type Props = {
 
 const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Props) => {
   const { data, isLoading } = useQueryAutomationPosts()
-  const { posts, onSelectPost, mutate, isPending } = useAutomationPosts(id)
 
   const igData = data?.data?.data as InstagramPostProps[] | undefined
 
@@ -65,18 +62,14 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
                 key={post.id}
                 type="button"
                 onClick={() => {
-                  setSelectedPost({
+                  const postData = {
                     id: post.id,
                     media: post.media_url,
                     caption: post.caption,
-                  })
-
-                  onSelectPost({
-                    postid: post.id,
-                    media: post.media_url,
-                    mediaType: post.media_type,
-                    caption: post.caption,
-                  })
+                  }
+                  
+                  // Update the preview in parent component
+                  setSelectedPost(postData)
                 }}
                 className={`relative aspect-square rounded-lg overflow-hidden border ${
                   selectedPost?.id === post.id ? 'border-blue-500' : 'border-transparent'
@@ -92,21 +85,6 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
               </button>
             ))}
           </div>
-
-          <Button
-            onClick={() => mutate({})}
-            disabled={posts.length === 0 || isPending}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-xs"
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="h-3 w-3 animate-spin mr-2" />
-                Saving...
-              </>
-            ) : (
-              'Attach selected posts to automation'
-            )}
-          </Button>
         </>
       )}
     </div>
