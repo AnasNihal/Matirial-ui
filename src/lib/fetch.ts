@@ -66,7 +66,7 @@ export const refreshToken = async (longLivedToken: string) => {
 // -----------------------------
 export const sendDM = async (
 pageId: string, recipientId: string, message: string, token: string) => {
-  console.log('Sending DM to:', recipientId);
+  console.log('🔵 [sendDM] Sending DM to:', recipientId);
 
   try {
     const response = await axios.post(
@@ -77,16 +77,17 @@ pageId: string, recipientId: string, message: string, token: string) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${PAGE_ACCESS_TOKEN}`,
+          Authorization: `Bearer ${token}`, // ✅ Use user's token
           'Content-Type': 'application/json',
         },
       }
     );
 
+    console.log('✅ [sendDM] DM sent successfully');
     return response;
 
   } catch (error: any) {
-    console.error('DM Error:', error.response?.data || error.message);
+    console.error('❌ [sendDM] Error:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -96,39 +97,124 @@ pageId: string, recipientId: string, message: string, token: string) => {
 // SEND PRIVATE REPLY TO COMMENT
 // -----------------------------
 export const sendPrivateReplyToComment = async (
-pageId: string, commentId: string, message: string, token: string) => {
-  console.log('Sending private reply to comment:', commentId);
+  pageId: string, 
+  commentId: string, 
+  message: string, 
+  token: string,
+  imageUrl?: string | null,
+  links?: Array<{ title: string; url: string }>
+) => {
+  console.log('🔵 [sendPrivateReplyToComment] Starting:', {
+    commentId,
+    messageLength: message.length,
+    hasImage: !!imageUrl,
+    imageUrl: imageUrl ? imageUrl.substring(0, 80) + '...' : 'none',
+    linksCount: links?.length || 0,
+    links: links?.map(l => l.title) || [],
+  })
 
   try {
-    const response = await axios.post(
-      `${GRAPH_BASE_URL}/${pageId}/messages`,
-      {
-        recipient: { comment_id: commentId },
-        message: { text: message },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${PAGE_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
+    // ✅ CRITICAL: Instagram only allows ONE private message per comment
+    // So we must combine everything into a SINGLE message
+    
+    // Build complete message text (original message + formatted links)
+    let completeMessage = message || ''
+    
+    // Add links to the message text if they exist
+    if (links && links.length > 0) {
+      const linksText = links
+        .map(link => `${link.title}\n${link.url}`)
+        .join('\n\n')
+      
+      if (completeMessage) {
+        completeMessage = `${completeMessage}\n\n${linksText}`
+      } else {
+        completeMessage = linksText
       }
-    );
+    }
 
-    return response;
+    console.log('🔵 [sendPrivateReplyToComment] Complete message:', {
+      hasText: !!completeMessage,
+      textLength: completeMessage.length,
+      hasImage: !!imageUrl,
+    })
 
+    // ✅ Option 1: Send image with text (if image exists)
+    if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
+      console.log('🔄 [sendPrivateReplyToComment] Sending SINGLE message with image + text + links')
+      
+      const response = await axios.post(
+        `${GRAPH_BASE_URL}/${pageId}/messages`,
+        {
+          recipient: { comment_id: commentId },
+          message: {
+            attachment: {
+              type: 'image',
+              payload: {
+                url: imageUrl,
+                is_reusable: false,
+              },
+            },
+            // Include all text (message + links) in the message
+            ...(completeMessage && { text: completeMessage }),
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+      
+      console.log('✅ [sendPrivateReplyToComment] Image with text + links sent successfully')
+      return { status: 200, data: 'Message sent' }
+    }
+    
+    // ✅ Option 2: Send text only (if no image)
+    if (completeMessage) {
+      console.log('🔄 [sendPrivateReplyToComment] Sending SINGLE text message with links')
+      
+      const response = await axios.post(
+        `${GRAPH_BASE_URL}/${pageId}/messages`,
+        {
+          recipient: { comment_id: commentId },
+          message: { text: completeMessage },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+      
+      console.log('✅ [sendPrivateReplyToComment] Text message with links sent successfully')
+      return { status: 200, data: 'Message sent' }
+    }
+
+    console.warn('⚠️ [sendPrivateReplyToComment] No content to send (no message, no image, no links)')
+    return { status: 200, data: 'No content to send' }
   } catch (error: any) {
-    console.error('Private Reply Error:', error.response?.data || error.message);
-    throw error;
+    console.error('❌ [sendPrivateReplyToComment] Error:', {
+      error: error.response?.data || error.message,
+      status: error.response?.status,
+      commentId,
+      hasImage: !!imageUrl,
+      linksCount: links?.length || 0,
+    })
+    throw error
   }
-};
+}
 
 
 
 export const sendPublicReplyToComment = async (
   commentId: string,
-  message: string
+  message: string,
+  token: string
 ) => {
-  console.log('Sending PUBLIC reply to comment:', commentId)
+  console.log('🔵 [sendPublicReplyToComment] Sending PUBLIC reply to comment:', commentId)
 
   try {
     const response = await axios.post(
@@ -136,12 +222,13 @@ export const sendPublicReplyToComment = async (
       { message },
       {
         headers: {
-          Authorization: `Bearer ${process.env.META_PAGE_ACCESS_TOKEN}`, // ✅ PAGE TOKEN ONLY
+          Authorization: `Bearer ${token}`, // ✅ Use user's token
           'Content-Type': 'application/json'
         }
       }
     )
 
+    console.log('✅ [sendPublicReplyToComment] Public reply sent successfully')
     return response
 
   } catch (error: any) {

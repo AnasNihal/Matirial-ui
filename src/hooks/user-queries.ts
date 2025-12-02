@@ -20,7 +20,7 @@ export const useQueryAutomations = () => {
           hasResult: !!result,
           resultType: typeof result,
           resultKeys: result ? Object.keys(result) : [],
-        })
+  })
         
         // ✅ Ensure we return the result properly
         if (!result) {
@@ -89,7 +89,7 @@ export const useQueryAutomation = (id: string) => {
         console.log('🔍 [useQueryAutomation] Result received:', {
           status: result?.status,
           hasData: !!result?.data,
-        })
+  })
         return result
       } catch (error) {
         console.error('❌ [useQueryAutomation] Error:', error)
@@ -119,7 +119,7 @@ export const useQueryUser = () => {
           status: result?.status,
           hasData: !!result?.data,
           hasIntegrations: !!result?.data?.integrations,
-        })
+  })
         
         // ✅ Handle 404 as valid response (user not found in DB yet)
         if (result?.status === 404 || result?.status === 200) {

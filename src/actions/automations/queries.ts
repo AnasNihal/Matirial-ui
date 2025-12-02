@@ -115,10 +115,45 @@ export const addListener = async (
   automationId: string,
   listener: 'SMARTAI' | 'MESSAGE',
   prompt: string,
-  reply?: string
+  reply?: string,
+  dmImage?: string | null,
+  dmLinks?: Array<{ title: string; url: string }>
 ) => {
-  // ✅ CRITICAL FIX: Use upsert to update existing or create new listener
-  // This prevents errors when listener already exists
+  console.log('💾 [addListener] Saving listener with:', {
+    automationId,
+    listener,
+    promptLength: prompt.length,
+    hasReply: !!reply,
+    hasImage: !!dmImage,
+    imageType: dmImage ? (dmImage.startsWith('data:') ? 'base64' : dmImage.startsWith('http') ? 'url' : 'unknown') : 'none',
+    linksCount: dmLinks?.length || 0,
+  })
+  
+  // ✅ Store DM image and links as JSON in commentReply field
+  let replyData: string | null = null
+  
+  // Always create JSON if we have image or links
+  if (dmImage || (dmLinks && dmLinks.length > 0)) {
+    const validLinks = Array.isArray(dmLinks) 
+      ? dmLinks.filter(link => link && typeof link === 'object' && link.title && link.url)
+      : []
+    
+    const jsonData = {
+      dmImage: dmImage || null,
+      dmLinks: validLinks,
+      originalReply: reply || null,
+    }
+    replyData = JSON.stringify(jsonData)
+    console.log('💾 [addListener] Created JSON data:', {
+      hasImage: !!dmImage,
+      linksCount: validLinks.length,
+      jsonLength: replyData.length,
+    })
+  } else if (reply) {
+    // No image/links, just use reply as plain text
+    replyData = reply
+  }
+  
   return await client.automation.update({
     where: {
       id: automationId,
@@ -129,12 +164,12 @@ export const addListener = async (
           create: {
             listener,
             prompt,
-            commentReply: reply,
+            commentReply: replyData,
           },
           update: {
             listener,
             prompt,
-            commentReply: reply,
+            commentReply: replyData,
           },
         },
       },

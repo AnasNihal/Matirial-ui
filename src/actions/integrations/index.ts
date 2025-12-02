@@ -93,8 +93,74 @@ export const onIntegrate = async (code: string) => {
       return { status: 404, message: 'Integration record not found' }
     }
 
+    // ✅ ALLOW RECONNECTION: Update existing integration with new token
     if (integration.integrations.length > 0) {
-      return { status: 409, message: 'Integration already exists' }
+      console.log('🔄 Updating existing integration with new token...')
+      const existingIntegration = integration.integrations[0]
+      
+      // 1) SHORT-LIVED TOKEN
+      const token = await generateTokens(code)
+      console.log('✅ Short lived token received:', token)
+
+      if (!token || !token.access_token) {
+        return { status: 401, message: 'No access token received' }
+      }
+
+      // 2) EXCHANGE TO LONG-LIVED TOKEN
+      const longRes = await axios.get(
+        `${process.env.INSTAGRAM_BASE_URL}/access_token`,
+        {
+          params: {
+            grant_type: 'ig_exchange_token',
+            client_secret: process.env.INSTAGRAM_CLIENT_SECRET,
+            access_token: token.access_token,
+          },
+        }
+      )
+
+      const longToken = longRes.data?.access_token
+      const expiresIn = longRes.data?.expires_in || 60 * 24 * 60 * 60
+
+      if (!longToken) {
+        return { status: 401, message: 'Failed to convert to long-lived token' }
+      }
+
+      // 3) FETCH INSTAGRAM PROFILE
+      const profileResponse = await axios.get(
+        `${process.env.INSTAGRAM_BASE_URL}/me`,
+        {
+          params: {
+            fields: 'id,username,profile_picture_url',
+            access_token: longToken,
+          },
+        }
+      )
+
+      const igId = profileResponse.data.id
+      const igUsername = profileResponse.data.username
+      const igProfilePhoto = profileResponse.data.profile_picture_url
+
+      console.log('✅ Updated Instagram data:', {
+        id: igId,
+        username: igUsername,
+        hasPhoto: !!igProfilePhoto,
+      })
+
+      const expire_date = new Date(Date.now() + expiresIn * 1000)
+
+      // 4) UPDATE EXISTING INTEGRATION
+      const { updateIntegration } = await import('./queries')
+      const updated = await updateIntegration(
+        existingIntegration.id,
+        longToken,
+        expire_date,
+        igId,
+        igUsername,
+        igProfilePhoto
+      )
+
+      console.log('✅ Integration updated successfully')
+      return { status: 200, data: updated }
     }
 
     return { status: 404, message: 'Unexpected integration state' }

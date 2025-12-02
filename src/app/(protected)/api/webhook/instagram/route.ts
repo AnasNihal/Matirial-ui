@@ -138,51 +138,111 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
   if (!hasPost) {
     console.log(`❌ Post ${mediaId} not in automation ${automation.id}`)
     return NextResponse.json({ message: 'Post not in automation' }, { status: 200 })
-  }
+    }
 
   console.log(`✅ Automation ${automation.id} is ACTIVE and monitoring post ${mediaId}`)
   console.log(`✅ Keyword "${matcher.word}" matched!`)
 
-  const token = automation.User?.integrations[0]?.token
+  // ✅ Use PAGE ACCESS TOKEN from env (required for Instagram Graph API to send messages)
+  const pageToken = process.env.META_PAGE_ACCESS_TOKEN
+  const userToken = automation.User?.integrations[0]?.token
+  
+  console.log('🔍 [Webhook] Token check:', {
+    hasPageToken: !!pageToken,
+    pageTokenLength: pageToken?.length || 0,
+    pageTokenPreview: pageToken ? pageToken.substring(0, 30) + '...' : 'null',
+    hasUserToken: !!userToken,
+    userTokenPreview: userToken ? userToken.substring(0, 30) + '...' : 'null',
+  })
+  
+  // Use page token for sending messages (Instagram Graph API requires page token)
+  const token = pageToken
   if (!token) {
-    console.log('No access token found')
-    return NextResponse.json({ message: 'No token' }, { status: 200 })
+    console.log('❌ [Webhook] No PAGE ACCESS TOKEN found in env (META_PAGE_ACCESS_TOKEN)')
+    return NextResponse.json({ message: 'No page access token configured' }, { status: 200 })
   }
 
   // Handle MESSAGE listener - Send private reply to comment
-if (automation.listener?.listener === 'MESSAGE') {
-  console.log('Sending PRIVATE + PUBLIC reply...')
+  if (automation.listener?.listener === 'MESSAGE') {
+    console.log('🔵 [Webhook] MESSAGE listener detected - extracting DM data...')
 
-  const dmMessage =
-    automation.listener.prompt || 'Thanks for your message 💬'
+    // ✅ Extract DM message, image, and links from commentReply JSON
+    let dmMessage = automation.listener.prompt || 'Thanks for your message 💬'
+    let dmImage: string | null = null
+    let dmLinks: Array<{ title: string; url: string }> = []
+    let publicReply = 'Thanks for your comment ❤️'
 
-  const publicReply =
-    automation.listener.commentReply || 'Thanks for your comment ❤️'
+    // Try to parse commentReply as JSON to get image and links
+    if (automation.listener.commentReply) {
+      try {
+        const parsed = JSON.parse(automation.listener.commentReply)
+        console.log('✅ [Webhook] Parsed commentReply JSON:', {
+          hasImage: !!parsed.dmImage,
+          linksCount: parsed.dmLinks?.length || 0,
+          hasOriginalReply: !!parsed.originalReply,
+        })
+        
+        dmImage = parsed.dmImage || null
+        dmLinks = Array.isArray(parsed.dmLinks) 
+          ? parsed.dmLinks.filter((l: any) => l && typeof l === 'object' && l.title && l.url)
+          : []
+        publicReply = parsed.originalReply || publicReply
+        
+        // If image is base64, convert to dynamic URL
+        if (dmImage && dmImage.startsWith('data:image')) {
+          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+          dmImage = `${baseUrl}/api/dm-image/${automation.id}`
+          console.log('🔄 [Webhook] Converted base64 to dynamic URL:', dmImage)
+        }
+      } catch (parseError) {
+        // Not JSON, use as plain text for public reply
+        console.log('⚠️ [Webhook] commentReply is not JSON, using as plain text')
+        publicReply = automation.listener.commentReply
+      }
+    }
 
-  try {
-    // ✅ 1. PUBLIC COMMENT REPLY (UNDER POST)
-    await sendPublicReplyToComment(commentId, publicReply)
-    console.log('✅ Public reply sent')
+    console.log('🔵 [Webhook] Extracted DM data:', {
+      message: dmMessage.substring(0, 50),
+      hasImage: !!dmImage,
+      imageUrl: dmImage ? dmImage.substring(0, 80) : 'none',
+      linksCount: dmLinks.length,
+      links: dmLinks.map(l => l.title),
+    })
 
-    // ✅ 2. PRIVATE DM
-    await sendPrivateReplyToComment(pageId, commentId, dmMessage, token)
-    console.log('✅ Private DM sent')
+    try {
+      // ✅ 1. PUBLIC COMMENT REPLY (UNDER POST)
+      console.log('🔵 [Webhook] Step 1: Sending public reply...')
+      await sendPublicReplyToComment(commentId, publicReply, token)
+      console.log('✅ [Webhook] Public reply sent')
 
-    // ✅ 3. Track response
-    await trackResponses(automation.id, 'COMMENT')
+      // ✅ 2. PRIVATE DM with image and links
+      console.log('🔵 [Webhook] Step 2: Sending private DM...')
+      await sendPrivateReplyToComment(pageId, commentId, dmMessage, token, dmImage, dmLinks)
+      console.log('✅ [Webhook] Private DM sent successfully')
 
-    return NextResponse.json(
-      { message: 'Public + Private replies sent successfully' },
-      { status: 200 }
-    )
+      // ✅ 3. Track response
+      console.log('🔵 [Webhook] Step 3: Tracking response...')
+      await trackResponses(automation.id, 'COMMENT')
+      console.log('✅ [Webhook] Response tracked')
 
-  } catch (error: any) {
-    console.error(
-      '❌ Failed to send replies:',
-      error.response?.data || error.message
-    )
+      return NextResponse.json(
+        { message: 'Public + Private replies sent successfully' },
+        { status: 200 }
+      )
+
+    } catch (error: any) {
+      console.error('❌❌❌ [Webhook] FAILED TO SEND REPLIES:', {
+        error: error.response?.data || error.message,
+        status: error.response?.status,
+        stack: error.stack,
+      })
+      return NextResponse.json(
+        { message: 'Error sending replies', error: error.response?.data || error.message },
+        { status: 200 }
+      )
+    }
   }
-}
 
 
   // Handle SMARTAI listener
@@ -295,10 +355,13 @@ async function handleMessagingEvent(entry: any, webhook_payload: any) {
     console.log(`✅ DM automation ${automation.id} is ACTIVE`)
     console.log(`✅ Keyword "${matcher.word}" matched in DM!`)
 
-    const token = automation.User?.integrations[0]?.token
-    if (!token) {
-      return NextResponse.json({ message: 'No token' }, { status: 200 })
+    // ✅ Use PAGE ACCESS TOKEN from env for sending DMs
+    const pageToken = process.env.META_PAGE_ACCESS_TOKEN
+    if (!pageToken) {
+      console.log('❌ [Webhook] No PAGE ACCESS TOKEN found in env for DM')
+      return NextResponse.json({ message: 'No page access token configured' }, { status: 200 })
     }
+    const token = pageToken
 
     // Handle MESSAGE listener
     if (automation.listener?.listener === 'MESSAGE') {
@@ -407,7 +470,13 @@ async function handleMessagingEvent(entry: any, webhook_payload: any) {
         
         await client.$transaction([receiver, sender])
 
-        const dm = await sendDM(pageId, senderId, aiResponse, automation.User?.integrations[0].token!)
+        // ✅ Use PAGE ACCESS TOKEN from env
+        const pageToken = process.env.META_PAGE_ACCESS_TOKEN
+        if (!pageToken) {
+          console.log('❌ [Webhook] No PAGE ACCESS TOKEN found in env')
+          return NextResponse.json({ message: 'No page access token configured' }, { status: 200 })
+        }
+        const dm = await sendDM(pageId, senderId, aiResponse, pageToken)
 
         if (dm.status === 200) {
           return NextResponse.json({ message: 'Conversation continued' }, { status: 200 })

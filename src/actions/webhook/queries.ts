@@ -4,7 +4,7 @@ import { client } from '@/lib/prisma'
 export const matchKeyword = async (keyword: string, postId?: string) => {
   // If no postId, we can't verify - used for DMs
   if (!postId) {
-    return await client.keyword.findFirst({
+  return await client.keyword.findFirst({
       where: {
         word: { equals: keyword, mode: 'insensitive' },
         Automation: { active: true },

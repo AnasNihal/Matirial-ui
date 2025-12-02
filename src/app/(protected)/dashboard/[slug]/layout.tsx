@@ -10,10 +10,10 @@ type Props = {
 const Layout = async ({ children, params }: Props) => {
   // ✅ SIMPLIFIED: No server-side prefetch, let client handle it with React Query
   return (
-    <div className="p-3">
-      <Sidebar slug={params.slug} />
-      <div
-        className="
+      <div className="p-3">
+        <Sidebar slug={params.slug} />
+        <div
+          className="
       lg:ml-[250px] 
       lg:pl-10 
       lg:py-5 
@@ -21,11 +21,11 @@ const Layout = async ({ children, params }: Props) => {
       flex-col 
       overflow-auto
       "
-      >
-        <InfoBar slug={params.slug} />
-        {children}
+        >
+          <InfoBar slug={params.slug} />
+          {children}
+        </div>
       </div>
-    </div>
   )
 }
 

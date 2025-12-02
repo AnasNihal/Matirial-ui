@@ -57,6 +57,8 @@ export default function AutomationBuilder({ id }: Props) {
     keyword: '',
     dmText: '',
     dmEnabled: false,
+    dmImage: null as string | null,
+    dmLinks: [] as Array<{ title: string; url: string }>,
   })
 
   // Mutations for activate & update
@@ -96,7 +98,13 @@ export default function AutomationBuilder({ id }: Props) {
       await saveKeyword(id, keyword.trim())
       
       if (dmEnabled && dmText) {
-        await saveListener(id, 'MESSAGE', dmText.trim())
+        // ✅ CRITICAL: Pass image and links to saveListener
+        const validDmLinks = Array.isArray(dmLinks) ? dmLinks : []
+        await saveListener(id, 'MESSAGE', dmText.trim(), undefined, dmImage || null, validDmLinks)
+        console.log('✅ [updateMutate] Listener saved with:', {
+          hasImage: !!dmImage,
+          linksCount: validDmLinks.length,
+        })
       }
     },
     undefined  // Don't invalidate queries automatically
@@ -167,19 +175,40 @@ export default function AutomationBuilder({ id }: Props) {
       initialData.current.keyword = ''
     }
 
-    if (auto.listener?.prompt) {
-      console.log('🔍 [AutomationBuilder] Setting listener prompt, length:', auto.listener.prompt.length)
-      setDmText(auto.listener.prompt)
-      setDmEnabled(true)
-      initialData.current.dmText = auto.listener.prompt
-      initialData.current.dmEnabled = true
-    } else {
-      console.log('🔍 [AutomationBuilder] No listener found, clearing DM data')
-      setDmText('')
-      setDmEnabled(false)
-      initialData.current.dmText = ''
-      initialData.current.dmEnabled = false
-    }
+      if (auto.listener?.prompt) {
+        console.log('🔍 [AutomationBuilder] Setting listener prompt, length:', auto.listener.prompt.length)
+        setDmText(auto.listener.prompt)
+        setDmEnabled(true)
+        initialData.current.dmText = auto.listener.prompt
+        initialData.current.dmEnabled = true
+        
+        // ✅ Load DM image and links from commentReply JSON
+        const loadedDmImage = (auto.listener as any)?.dmImage || null
+        const loadedDmLinks = Array.isArray((auto.listener as any)?.dmLinks) 
+          ? (auto.listener as any).dmLinks.filter((l: any) => l && typeof l === 'object' && l.title && l.url)
+          : []
+        
+        console.log('📥 [AutomationBuilder] Loading DM image and links:', {
+          hasImage: !!loadedDmImage,
+          imageType: loadedDmImage ? (loadedDmImage.startsWith('data:') ? 'base64' : loadedDmImage.startsWith('http') ? 'url' : 'unknown') : 'none',
+          linksCount: loadedDmLinks.length,
+        })
+        
+        setDmImage(loadedDmImage)
+        setDmLinks(loadedDmLinks)
+        initialData.current.dmImage = loadedDmImage
+        initialData.current.dmLinks = loadedDmLinks
+      } else {
+        console.log('🔍 [AutomationBuilder] No listener found, clearing DM data')
+        setDmText('')
+        setDmEnabled(false)
+        initialData.current.dmText = ''
+        initialData.current.dmEnabled = false
+        setDmImage(null)
+        setDmLinks([])
+        initialData.current.dmImage = null
+        initialData.current.dmLinks = []
+      }
 
     const integration = auto?.User?.integrations?.[0]
     console.log('🔍 [AutomationBuilder] Integration data:', {
@@ -209,10 +238,12 @@ export default function AutomationBuilder({ id }: Props) {
       previewPost?.id !== initialData.current.post?.id ||
       keyword !== initialData.current.keyword ||
       dmText !== initialData.current.dmText ||
-      dmEnabled !== initialData.current.dmEnabled
+      dmEnabled !== initialData.current.dmEnabled ||
+      dmImage !== initialData.current.dmImage ||
+      JSON.stringify(dmLinks) !== JSON.stringify(initialData.current.dmLinks)
 
     setHasChanges(changed)
-  }, [previewPost, keyword, dmText, dmEnabled, isLive])
+  }, [previewPost, keyword, dmText, dmEnabled, dmImage, dmLinks, isLive])
 
 
 async function handleActivate() {
@@ -232,6 +263,8 @@ async function handleActivate() {
               keyword,
               dmText,
               dmEnabled,
+              dmImage,
+              dmLinks,
             }
             resolve()
           },
@@ -292,6 +325,8 @@ async function handleActivate() {
               keyword,
               dmText,
               dmEnabled,
+              dmImage,
+              dmLinks,
             }
             resolve()
           },
@@ -312,6 +347,8 @@ async function handleActivate() {
     setKeyword(initialData.current.keyword)
     setDmText(initialData.current.dmText)
     setDmEnabled(initialData.current.dmEnabled)
+    setDmImage(initialData.current.dmImage)
+    setDmLinks(initialData.current.dmLinks)
     setHasChanges(false)
   }
 

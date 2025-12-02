@@ -3,15 +3,21 @@
 import { client } from '@/lib/prisma'
 
 export const updateIntegration = async (
+  id: string,
   token: string,
   expire: Date,
-  id: string
+  igId?: string,
+  igUsername?: string,
+  igProfilePhoto?: string
 ) => {
   return await client.integrations.update({
     where: { id },
     data: {
       token,
       expiresAt: expire,
+      instagramId: igId,
+      instagramUsername: igUsername,
+      instagramProfilePicture: igProfilePhoto,
     },
   })
 }

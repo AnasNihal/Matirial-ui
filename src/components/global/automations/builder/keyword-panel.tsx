@@ -33,7 +33,7 @@ const KeywordPanel = ({
         <div>
           <p className="text-sm font-medium">2. Add keyword</p>
           <p className="text-xs text-text-secondary">
-            We’ll detect this keyword in comments or DMs.
+            We'll detect this keyword in comments or DMs.
           </p>
         </div>
         <span className="text-[10px] uppercase tracking-wide text-text-secondary">

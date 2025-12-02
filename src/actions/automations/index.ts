@@ -246,6 +246,25 @@ export const getAutomationInfo = async (id: string) => {
         dmCount: Number(automation.listener.dmCount || 0),
         commentCount: Number(automation.listener.commentCount || 0),
         automationId: String(automation.listener.automationId || ''),
+        // Parse DM image and links from commentReply if it's JSON
+        dmImage: (() => {
+          if (!automation.listener.commentReply) return null
+          try {
+            const parsed = JSON.parse(automation.listener.commentReply)
+            return parsed.dmImage || null
+          } catch {
+            return null
+          }
+        })(),
+        dmLinks: (() => {
+          if (!automation.listener.commentReply) return []
+          try {
+            const parsed = JSON.parse(automation.listener.commentReply)
+            return Array.isArray(parsed.dmLinks) ? parsed.dmLinks : []
+          } catch {
+            return []
+          }
+        })(),
       } : null,
       User: automation.User ? {
         subscription: automation.User.subscription ? {
@@ -312,23 +331,28 @@ export const saveListener = async (
   autmationId: string,
   listener: 'SMARTAI' | 'MESSAGE',
   prompt: string,
-  reply?: string
+  reply?: string,
+  dmImage?: string | null,
+  dmLinks?: Array<{ title: string; url: string }>
 ) => {
-  console.log('🔍 [saveListener] Starting for automationId:', autmationId, 'listener:', listener, 'prompt length:', prompt?.length)
+  console.log('🔍 [saveListener] Starting:', {
+    automationId: autmationId,
+    listener,
+    promptLength: prompt?.length || 0,
+    hasReply: !!reply,
+    hasImage: !!dmImage,
+    imageType: dmImage ? (dmImage.startsWith('data:') ? 'base64' : dmImage.startsWith('http') ? 'url' : 'unknown') : 'none',
+    linksCount: dmLinks?.length || 0,
+  })
   await onCurrentUser()
   try {
-    const create = await addListener(autmationId, listener, prompt, reply)
-    console.log('🔍 [saveListener] Create result:', !!create)
-    if (create) {
-      console.log('✅ [saveListener] Success')
-      return { status: 200, data: 'Listener created' }
-    }
-    console.warn('⚠️ [saveListener] Failed to create listener')
-    return { status: 404, data: 'Cant save listener' }
+    const create = await addListener(autmationId, listener, prompt, reply, dmImage, dmLinks)
+    console.log('✅ [saveListener] Successfully saved to database')
+    return { status: 200, data: 'Listener created' }
   } catch (error: any) {
     console.error('❌ [saveListener] ERROR:', error)
     console.error('❌ [saveListener] Error details:', { message: error?.message, stack: error?.stack })
-    return { status: 500, data: 'Oops! something went wrong' }
+    return { status: 500, data: error?.message || 'Oops! something went wrong' }
   }
 }
 
