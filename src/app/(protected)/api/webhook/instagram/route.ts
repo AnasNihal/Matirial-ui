@@ -6,7 +6,8 @@ import {
   sendPrivateReplyToComment,
   sendDMWithImage,
   getCommentDetails, 
-  sendPublicReplyToComment
+  sendPublicReplyToComment,
+  getPageAccessToken
 } from '@/lib/fetch'
 import {
   matchKeyword,
@@ -107,11 +108,14 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
     return NextResponse.json({ message: 'Invalid comment data' }, { status: 200 })
   }
 
-  console.log('Comment Text:', commentText)
-  console.log('Comment ID:', commentId)
-  console.log('Media ID:', mediaId)
-  console.log('From User ID:', fromUserId)
-  console.log('Instagram Scoped ID:', instagramScopedId, '(for direct DM)')
+  console.log('📝 [Webhook] Comment Details:', {
+    commentText,
+    commentId,
+    mediaId,
+    fromUserId,
+    instagramScopedId: instagramScopedId || '❌ NOT PROVIDED',
+    fromObject: JSON.stringify(value.from, null, 2),
+  })
 
   // ✅ CRITICAL: Check if comment matches keyword from ACTIVE automation on THIS SPECIFIC POST
   if (!mediaId) {
@@ -158,16 +162,96 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
     hasPageToken: !!pageToken,
     pageTokenLength: pageToken?.length || 0,
     pageTokenPreview: pageToken ? pageToken.substring(0, 30) + '...' : 'null',
+    pageTokenFirstChars: pageToken ? pageToken.substring(0, 10) : 'null',
+    pageTokenLastChars: pageToken && pageToken.length > 10 ? '...' + pageToken.substring(pageToken.length - 10) : 'null',
     hasUserToken: !!userToken,
     userTokenPreview: userToken ? userToken.substring(0, 30) + '...' : 'null',
+    envVarName: 'META_PAGE_ACCESS_TOKEN',
   })
   
   // Use page token for sending messages (Instagram Graph API requires page token)
-  const token = pageToken
+  let token = pageToken
   if (!token) {
-    console.log('❌ [Webhook] No PAGE ACCESS TOKEN found in env (META_PAGE_ACCESS_TOKEN)')
+    console.error('❌❌❌ [Webhook] CRITICAL: No PAGE ACCESS TOKEN found in env (META_PAGE_ACCESS_TOKEN)')
+    console.error('❌❌❌ [Webhook] ACTION REQUIRED: Add META_PAGE_ACCESS_TOKEN to your .env file')
+    console.error('❌❌❌ [Webhook] Get a new token from: https://developers.facebook.com/tools/explorer/')
+    console.error('❌❌❌ [Webhook] Make sure to restart your dev server after updating .env file!')
     return NextResponse.json({ message: 'No page access token configured' }, { status: 200 })
   }
+  
+  // ✅ Validate token format (should start with EAA for page tokens)
+  if (!token.startsWith('EAA')) {
+    console.warn('⚠️⚠️⚠️ [Webhook] WARNING: Token does not start with "EAA" - might not be a valid Page Access Token!')
+    console.warn('⚠️⚠️⚠️ [Webhook] Page tokens usually start with "EAA"')
+    console.warn('⚠️⚠️⚠️ [Webhook] Make sure you selected "Page" (not "User") in Graph API Explorer')
+  }
+  
+  // ✅ Validate token and try to get page token from user token if expired
+  let validatedToken = token
+  let tokenValid = false
+  
+  try {
+    const testResponse = await axios.get(
+      `${GRAPH_BASE_URL}/${FACEBOOK_PAGE_ID}`,
+      {
+        params: { 
+          access_token: token,
+          fields: 'id,name'
+        },
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )
+    
+    console.log('✅ [Webhook] Token validation SUCCESS:', {
+      tokenType: 'Page Token',
+      pageName: testResponse.data?.name || 'N/A',
+      pageId: testResponse.data?.id || 'N/A',
+    })
+    tokenValid = true
+  } catch (tokenError: any) {
+    const errorDetails = tokenError.response?.data || tokenError.message
+    const isExpired = errorDetails?.error?.code === 190 || errorDetails?.error?.code === 463
+    
+    console.error('❌❌❌ [Webhook] Token validation FAILED:', {
+      error: errorDetails?.error?.message || errorDetails,
+      errorCode: errorDetails?.error?.code,
+      isExpired,
+    })
+    
+    if (isExpired) {
+      console.error('❌❌❌ [Webhook] TOKEN IS EXPIRED!')
+      console.log('🔄 [Webhook] Attempting to get page token from user integration...')
+      
+      // Try to get page token from user token
+      if (userToken) {
+        const pageTokenFromUser = await getPageAccessToken(userToken, FACEBOOK_PAGE_ID)
+        if (pageTokenFromUser) {
+          console.log('✅ [Webhook] Successfully got page token from user integration!')
+          validatedToken = pageTokenFromUser
+          tokenValid = true
+        } else {
+          console.error('❌❌❌ [Webhook] Failed to get page token from user integration')
+          console.error('❌❌❌ [Webhook] The token you added is already expired or invalid!')
+          console.error('❌❌❌ [Webhook] Get a FRESH token from: https://developers.facebook.com/tools/explorer/')
+          console.error('❌❌❌ [Webhook] Make sure to:')
+          console.error('   1. Select your APP')
+          console.error('   2. Select "Page" (NOT "User")')
+          console.error('   3. Select your PAGE')
+          console.error('   4. Generate token with permissions: pages_messaging, instagram_basic, instagram_manage_messages')
+          console.error('   5. Copy the token and add to .env file')
+          console.error('   6. RESTART your dev server!')
+        }
+      } else {
+        console.error('❌❌❌ [Webhook] No user token available for fallback')
+        console.error('❌❌❌ [Webhook] Get a FRESH token from: https://developers.facebook.com/tools/explorer/')
+      }
+    } else {
+      console.error('❌❌❌ [Webhook] Token validation error (not expired):', errorDetails)
+    }
+  }
+  
+  // Use validated token (or fallback)
+  token = validatedToken
 
   // Handle MESSAGE listener - Send private reply to comment
   if (automation.listener?.listener === 'MESSAGE') {

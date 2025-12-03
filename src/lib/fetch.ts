@@ -53,6 +53,43 @@ export const refreshToken = async (longLivedToken: string) => {
 }
 
 // -----------------------------
+// GET PAGE ACCESS TOKEN FROM USER TOKEN
+// -----------------------------
+export const getPageAccessToken = async (userToken: string, pageId: string) => {
+  try {
+    console.log('🔄 [getPageAccessToken] Attempting to get page token from user token...')
+    
+    // First, get user's pages
+    const pagesResponse = await axios.get(
+      `${GRAPH_BASE_URL}/me/accounts`,
+      {
+        params: {
+          access_token: userToken,
+          fields: 'id,name,access_token',
+        },
+      }
+    )
+
+    const pages = pagesResponse.data?.data || []
+    console.log('📄 [getPageAccessToken] Found pages:', pages.length)
+    
+    // Find the page that matches our page ID
+    const targetPage = pages.find((page: any) => page.id === pageId)
+    
+    if (targetPage?.access_token) {
+      console.log('✅ [getPageAccessToken] Found page token for page:', targetPage.name)
+      return targetPage.access_token
+    }
+    
+    console.warn('⚠️ [getPageAccessToken] Page not found or no access token')
+    return null
+  } catch (error: any) {
+    console.error('❌ [getPageAccessToken] Error:', error.response?.data || error.message)
+    return null
+  }
+}
+
+// -----------------------------
 // SEND PRIVATE MESSAGE (DM)
 // -----------------------------
 export const sendDM = async (
@@ -199,36 +236,43 @@ export const sendPrivateReplyToComment = async (
     imageUrl: imageUrl ? imageUrl.substring(0, 80) + '...' : 'none',
     linksCount: links?.length || 0,
     links: links?.map(l => l.title) || [],
+    hasRecipientId: !!recipientId,
+    recipientId: recipientId || '❌ NOT PROVIDED (Step 2 & 3 will be skipped)',
   })
 
   try {
-    // ✅ ZORCHA-STYLE APPROACH: Send TWO separate messages
-    // Instagram API does NOT support image + text + buttons in ONE message
-    // Solution: Send image first, then text with links (Instagram auto-generates link preview cards)
+    // ✅ ZORCHA-STYLE APPROACH: Send multiple separate messages
+    // Instagram auto-generates preview cards ONLY when URLs are sent ALONE (no other text)
+    // Strategy:
+    // Step 1: Send image as private reply to comment
+    // Step 2: Send text message (WITHOUT links) as direct DM
+    // Step 3: Send each link URL ALONE in separate direct DM messages (Instagram auto-generates preview cards)
     
-    // Build complete message text (original message + formatted links)
-    let completeMessage = message || ''
+    // Build text message WITHOUT links (links will be sent separately)
+    let textMessage = message || ''
     
-    // Format links as plain text (Instagram will auto-generate preview cards)
+    // If we have links, add their titles to the text (but NOT the URLs)
     if (links && links.length > 0) {
-      const linksText = links
-        .map(link => `${link.title}\n${link.url}`)
-        .join('\n\n')
-      
-      if (completeMessage) {
-        completeMessage = `${completeMessage}\n\n${linksText}`
+      const linkTitles = links.map(link => link.title).join('\n')
+      if (textMessage) {
+        textMessage = `${textMessage}\n\n${linkTitles}`
       } else {
-        completeMessage = linksText
+        textMessage = linkTitles
       }
     }
 
-    console.log('🔵 [sendPrivateReplyToComment] Starting (Zorcha-style: 2 separate messages):', {
-      hasText: !!completeMessage,
-      textLength: completeMessage.length,
+    console.log('🔵 [sendPrivateReplyToComment] Starting (Zorcha-style: image + text + separate link messages):', {
+      hasText: !!textMessage,
+      textLength: textMessage.length,
       hasImage: !!imageUrl,
       linksCount: links?.length || 0,
+      note: 'Links will be sent ALONE in separate messages for Instagram preview cards',
     })
 
+    let imageSent = false
+    let textSent = false
+    let linksSent = 0
+    
     // ✅ Step 1: Send IMAGE message FIRST (if image exists) - NO TEXT, NO BUTTONS
     if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
       // ⚠️ Instagram requires HTTPS for image URLs
@@ -265,39 +309,40 @@ export const sendPrivateReplyToComment = async (
           status: imageResponse.status,
           responseData: imageResponse.data,
         })
+        imageSent = true
       } catch (imageError: any) {
         const errorDetails = imageError.response?.data || imageError.message
+        const isTokenExpired = errorDetails?.error?.code === 190 || errorDetails?.error?.code === 463
+        
         console.error('❌ [sendPrivateReplyToComment] Step 1 FAILED: Image message failed:', {
           error: errorDetails,
           status: imageError.response?.status,
           errorCode: errorDetails?.error?.code,
           errorMessage: errorDetails?.error?.message,
+          isTokenExpired,
         })
+        
+        if (isTokenExpired) {
+          console.error('❌❌❌ [sendPrivateReplyToComment] TOKEN EXPIRED!')
+          console.error('❌❌❌ ACTION REQUIRED: Your META_PAGE_ACCESS_TOKEN has expired!')
+          console.error('❌❌❌ Get a new token from: https://developers.facebook.com/tools/explorer/')
+          console.error('❌❌❌ Or reconnect your Instagram integration in the app')
+        }
         // Continue to send text message even if image fails
       }
     }
     
-    // ✅ Step 2: Send TEXT message as DIRECT DM (not as comment reply)
+    // ✅ Step 2: Send TEXT message (WITHOUT links) as DIRECT DM
     // Instagram only allows ONE private reply per comment, so we send text as direct DM
-    if (completeMessage) {
-      console.log('💬 [sendPrivateReplyToComment] Step 2: Sending TEXT message as DIRECT DM (Instagram will auto-generate link preview cards)...')
-      
-      // Use recipientId (Instagram scoped ID) for direct DM, fallback to comment_id if not provided
-      const dmRecipient = recipientId || commentId
-      const recipientType = recipientId ? 'direct DM (user ID)' : 'comment reply (fallback)'
-      
-      console.log('📤 [sendPrivateReplyToComment] Step 2 recipient:', {
-        recipientId: dmRecipient,
-        recipientType,
-        hasRecipientId: !!recipientId,
-      })
+    if (textMessage && recipientId) {
+      console.log('💬 [sendPrivateReplyToComment] Step 2: Sending TEXT message (without links) as DIRECT DM...')
       
       try {
         const textResponse = await axios.post(
           `${GRAPH_BASE_URL}/${pageId}/messages`,
           {
-            recipient: recipientId ? { id: recipientId } : { comment_id: commentId },
-            message: { text: completeMessage },
+            recipient: { id: recipientId },
+            message: { text: textMessage },
           },
           {
             headers: {
@@ -310,32 +355,142 @@ export const sendPrivateReplyToComment = async (
         console.log('✅ [sendPrivateReplyToComment] Step 2 SUCCESS: Text message sent as direct DM', {
           status: textResponse.status,
           responseData: textResponse.data,
-          recipientType,
-          note: 'Instagram will auto-generate link preview cards for URLs in the message',
         })
-        
-        return { status: 200, success: true, data: 'Image + text messages sent successfully (Zorcha-style)' }
+        textSent = true
       } catch (textError: any) {
         const errorDetails = textError.response?.data || textError.message
+        const isTokenExpired = errorDetails?.error?.code === 190 || errorDetails?.error?.code === 463
+        
         console.error('❌ [sendPrivateReplyToComment] Step 2 FAILED: Text message failed:', {
           error: errorDetails,
           status: textError.response?.status,
           errorCode: errorDetails?.error?.code,
           errorMessage: errorDetails?.error?.message,
-          recipientType,
+          isTokenExpired,
         })
         
-        return { 
-          status: textError.response?.status || 500, 
-          success: false, 
-          error: errorDetails,
-          message: 'Failed to send text message'
+        if (isTokenExpired) {
+          console.error('❌❌❌ [sendPrivateReplyToComment] TOKEN EXPIRED!')
+          console.error('❌❌❌ ACTION REQUIRED: Your META_PAGE_ACCESS_TOKEN has expired!')
+          console.error('❌❌❌ Get a new token from: https://developers.facebook.com/tools/explorer/')
+          console.error('❌❌❌ Or reconnect your Instagram integration in the app')
+        }
+        // Continue to send links even if text fails
+      }
+    } else if (textMessage && !recipientId) {
+      console.warn('⚠️ [sendPrivateReplyToComment] Step 2 SKIPPED: No recipientId provided for direct DM', {
+        hasTextMessage: !!textMessage,
+        hasRecipientId: !!recipientId,
+        note: 'Text message requires recipientId (Instagram scoped ID) to send as direct DM',
+      })
+    } else if (!textMessage) {
+      console.log('ℹ️ [sendPrivateReplyToComment] Step 2 SKIPPED: No text message to send')
+    }
+    
+    // ✅ Step 3: Send each link URL ALONE in separate direct DM messages
+    // Instagram auto-generates preview cards ONLY when URLs are sent ALONE (no other text)
+    if (links && links.length > 0 && recipientId) {
+      console.log('🔗 [sendPrivateReplyToComment] Step 3: Sending link URLs ALONE (one per message) for Instagram preview cards...')
+      
+      let successCount = 0
+      let failCount = 0
+      
+      for (let i = 0; i < links.length; i++) {
+        const link = links[i]
+        console.log(`📤 [sendPrivateReplyToComment] Step 3.${i + 1}: Sending link URL ALONE: ${link.url}`)
+        
+        try {
+          // ✅ CRITICAL: Send ONLY the URL, no other text (Instagram auto-generates preview card)
+          const linkResponse = await axios.post(
+            `${GRAPH_BASE_URL}/${pageId}/messages`,
+            {
+              recipient: { id: recipientId },
+              message: { text: link.url }, // ✅ URL ALONE - Instagram will generate preview card
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          )
+          
+          console.log(`✅ [sendPrivateReplyToComment] Step 3.${i + 1} SUCCESS: Link URL sent (Instagram will auto-generate preview card)`, {
+            status: linkResponse.status,
+            url: link.url,
+            title: link.title,
+          })
+          successCount++
+          linksSent++
+          
+          // Small delay between messages to avoid rate limiting
+          if (i < links.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+          }
+        } catch (linkError: any) {
+          const errorDetails = linkError.response?.data || linkError.message
+          const isTokenExpired = errorDetails?.error?.code === 190 || errorDetails?.error?.code === 463
+          
+          console.error(`❌ [sendPrivateReplyToComment] Step 3.${i + 1} FAILED: Link URL failed:`, {
+            error: errorDetails,
+            status: linkError.response?.status,
+            url: link.url,
+            title: link.title,
+            isTokenExpired,
+          })
+          
+          if (isTokenExpired) {
+            console.error('❌❌❌ [sendPrivateReplyToComment] TOKEN EXPIRED!')
+            console.error('❌❌❌ ACTION REQUIRED: Your META_PAGE_ACCESS_TOKEN has expired!')
+            console.error('❌❌❌ Get a new token from: https://developers.facebook.com/tools/explorer/')
+            console.error('❌❌❌ Or reconnect your Instagram integration in the app')
+          }
+          failCount++
         }
       }
+      
+      console.log('📊 [sendPrivateReplyToComment] Step 3 Summary:', {
+        totalLinks: links.length,
+        successCount,
+        failCount,
+        note: 'Instagram should auto-generate preview cards for successfully sent URLs',
+      })
+    } else if (links && links.length > 0 && !recipientId) {
+      console.warn('⚠️ [sendPrivateReplyToComment] Step 3 SKIPPED: No recipientId provided for direct DM', {
+        linksCount: links.length,
+        hasRecipientId: !!recipientId,
+        note: 'Link URLs require recipientId (Instagram scoped ID) to send as direct DM',
+      })
+    } else if (!links || links.length === 0) {
+      console.log('ℹ️ [sendPrivateReplyToComment] Step 3 SKIPPED: No links to send')
     }
-
-    console.warn('⚠️ [sendPrivateReplyToComment] No content to send (no message, no image, no links)')
-    return { status: 200, success: false, data: 'No content to send' }
+    
+    // Return summary
+    const summary = {
+      imageSent,
+      textSent,
+      linksSent,
+      totalLinks: links?.length || 0,
+    }
+    
+    console.log('📊 [sendPrivateReplyToComment] Final Summary:', summary)
+    
+    if (imageSent || textSent || linksSent > 0) {
+      return { 
+        status: 200, 
+        success: true, 
+        data: 'Messages sent successfully (Zorcha-style)',
+        summary 
+      }
+    } else {
+      console.warn('⚠️ [sendPrivateReplyToComment] No messages were sent (no image, no text, no links)')
+      return { 
+        status: 400, 
+        success: false, 
+        error: 'No messages were sent',
+        summary 
+      }
+    }
   } catch (error: any) {
     const errorDetails = error.response?.data || error.message
     console.error('❌❌❌ [sendPrivateReplyToComment] UNHANDLED ERROR:', {
