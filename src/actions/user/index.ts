@@ -68,7 +68,7 @@ export const onBoardUser = async () => {
 
 export const onUserInfo = async () => {
   try {
-    const user = await onCurrentUser()
+  const user = await onCurrentUser()
     console.log('🔍 [onUserInfo] User ID:', user?.id)
     
     if (!user || !user.id) {

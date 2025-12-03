@@ -1,5 +1,6 @@
 import InfoBar from '@/components/global/infobar'
 import Sidebar from '@/components/global/sidebar'
+import BottomNav from '@/components/global/bottom-nav'
 import React from 'react'
 
 type Props = {
@@ -20,11 +21,14 @@ const Layout = async ({ children, params }: Props) => {
       flex 
       flex-col 
       overflow-auto
+      pb-20
+      lg:pb-5
       "
         >
           <InfoBar slug={params.slug} />
           {children}
         </div>
+        <BottomNav slug={params.slug} />
       </div>
   )
 }

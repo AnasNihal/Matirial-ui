@@ -148,8 +148,24 @@ export default function AutomationBuilder({ id }: Props) {
         media: auto.posts[0].media,
         caption: auto.posts[0].caption ?? undefined,
         mediaType: auto.posts[0].mediaType as 'IMAGE' | 'VIDEO' | 'CAROSEL_ALBUM' | undefined,
-        thumbnail: (auto.posts[0] as any).thumbnail || undefined,
+        thumbnail: undefined,
       }
+      
+      // ✅ If it's a video, try to get thumbnail from localStorage cache first
+      if (postData.mediaType === 'VIDEO') {
+        const cachedPost = localStorage.getItem(`post_${postData.id}`)
+        if (cachedPost) {
+          try {
+            const parsed = JSON.parse(cachedPost)
+            if (parsed.thumbnail) {
+              postData.thumbnail = parsed.thumbnail
+            }
+          } catch (e) {
+            console.warn('Failed to parse cached post:', e)
+          }
+        }
+      }
+      
       console.log('🔍 [AutomationBuilder] Setting post data:', { 
         id: postData.id, 
         hasMedia: !!postData.media, 

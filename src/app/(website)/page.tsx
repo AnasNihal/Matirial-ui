@@ -1,3 +1,5 @@
+'use client'
+
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -7,11 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { CheckCircle, Menu as MenuIcon } from 'lucide-react'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { CheckCircle, Menu as MenuIcon, X } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import React from 'react'
 
 export default function Home() {
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false)
   const plans = [
     {
       name: 'Free Plan',
@@ -61,12 +66,67 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <div className="md:hidden">
-              <button aria-label="menu" className="p-2 rounded-md bg-white/5">
-                <MenuIcon />
-              </button>
-            </div>
-            <Button className="hidden md:inline-flex bg-white "> 
+            {/* Mobile Menu */}
+            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+              <SheetTrigger asChild>
+                <button 
+                  aria-label="menu" 
+                  className="md:hidden p-2 rounded-md bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                  <MenuIcon className="h-5 w-5" />
+                </button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] bg-slate-900 border-slate-800">
+                <div className="flex flex-col gap-6 mt-8">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-lg bg-white/10 flex items-center justify-center font-bold text-lg">
+                        li
+                      </div>
+                      <div>
+                        <span className="text-xl font-semibold tracking-tight">Mation</span>
+                        <div className="text-xs text-blue-200/70">Instagram Automation</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <nav className="flex flex-col gap-4 text-sm">
+                    <Link 
+                      href="#features" 
+                      onClick={() => setIsMenuOpen(false)}
+                      className="text-blue-200 hover:text-white transition-colors"
+                    >
+                      Features
+                    </Link>
+                    <Link 
+                      href="#pricing" 
+                      onClick={() => setIsMenuOpen(false)}
+                      className="text-blue-200 hover:text-white transition-colors"
+                    >
+                      Pricing
+                    </Link>
+                    <Link 
+                      href="#about" 
+                      onClick={() => setIsMenuOpen(false)}
+                      className="text-blue-200 hover:text-white transition-colors"
+                    >
+                      About
+                    </Link>
+                  </nav>
+
+                  <div className="pt-4 border-t border-slate-800">
+                    <Button className="w-full bg-white text-slate-900 hover:bg-white/90" asChild>
+                      <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                        Login
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            {/* Desktop Login Button */}
+            <Button className="hidden md:inline-flex bg-white text-slate-900 hover:bg-white/90" asChild> 
               <Link href="/dashboard">Login</Link>
             </Button>
           </div>

@@ -262,9 +262,9 @@ export const getAutomationInfo = async (id: string) => {
             const parsed = JSON.parse(automation.listener.commentReply)
             return Array.isArray(parsed.dmLinks) ? parsed.dmLinks : []
           } catch {
-            return []
-          }
-        })(),
+          return []
+        }
+      })(),
       } : null,
       User: automation.User ? {
         subscription: automation.User.subscription ? {
