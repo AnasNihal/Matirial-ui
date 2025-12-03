@@ -1,8 +1,10 @@
 
 import { NextRequest, NextResponse } from 'next/server'
+import axios from 'axios'
 import { 
   sendDM, 
   sendPrivateReplyToComment,
+  sendDMWithImage,
   getCommentDetails, 
   sendPublicReplyToComment
 } from '@/lib/fetch'
@@ -17,6 +19,9 @@ import {
 import { findAutomation } from '@/actions/automations/queries'
 import { openai } from '@/lib/openai'
 import { client } from '@/lib/prisma'
+
+const GRAPH_API_VERSION = 'v24.0'
+const GRAPH_BASE_URL = `https://graph.facebook.com/${GRAPH_API_VERSION}`
 
 const FACEBOOK_PAGE_ID = "899407896585353"
 
@@ -93,6 +98,7 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
   const commentId = value.id
   const mediaId = value.media?.id
   const fromUserId = value.from?.id
+  const instagramScopedId = value.from?.self_ig_scoped_id // ✅ Instagram scoped ID for direct DM
   const pageId = FACEBOOK_PAGE_ID
 
 
@@ -105,6 +111,7 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
   console.log('Comment ID:', commentId)
   console.log('Media ID:', mediaId)
   console.log('From User ID:', fromUserId)
+  console.log('Instagram Scoped ID:', instagramScopedId, '(for direct DM)')
 
   // ✅ CRITICAL: Check if comment matches keyword from ACTIVE automation on THIS SPECIFIC POST
   if (!mediaId) {
@@ -190,10 +197,26 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
         
         // If image is base64, convert to dynamic URL
         if (dmImage && dmImage.startsWith('data:image')) {
-          const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+          // ✅ Priority: Use environment variables for public URL (ngrok, production, etc.)
+          let baseUrl = 
+            process.env.NGROK_URL || // ngrok URL (e.g., https://abc123.ngrok.io)
+            process.env.NEXT_PUBLIC_APP_URL || // Production URL
+            (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) || // Vercel URL
+            'http://localhost:3000' // Fallback
+          
+          // ✅ Fix: Remove trailing slash to avoid double slashes
+          baseUrl = baseUrl.replace(/\/$/, '')
+          
           dmImage = `${baseUrl}/api/dm-image/${automation.id}`
-          console.log('🔄 [Webhook] Converted base64 to dynamic URL:', dmImage)
+          console.log('🔄 [Webhook] Converted base64 to dynamic URL:', {
+            baseUrl,
+            fullUrl: dmImage,
+            envVars: {
+              hasNGROK_URL: !!process.env.NGROK_URL,
+              hasNEXT_PUBLIC_APP_URL: !!process.env.NEXT_PUBLIC_APP_URL,
+              hasVERCEL_URL: !!process.env.VERCEL_URL,
+            }
+          })
         }
       } catch (parseError) {
         // Not JSON, use as plain text for public reply
@@ -213,13 +236,72 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
     try {
       // ✅ 1. PUBLIC COMMENT REPLY (UNDER POST)
       console.log('🔵 [Webhook] Step 1: Sending public reply...')
-      await sendPublicReplyToComment(commentId, publicReply, token)
-      console.log('✅ [Webhook] Public reply sent')
+      try {
+        await sendPublicReplyToComment(commentId, publicReply, token)
+        console.log('✅ [Webhook] Public reply sent successfully')
+      } catch (publicError: any) {
+        console.error('❌ [Webhook] Failed to send public reply:', {
+          error: publicError.response?.data || publicError.message,
+        })
+        // Continue even if public reply fails
+      }
 
       // ✅ 2. PRIVATE DM with image and links
-      console.log('🔵 [Webhook] Step 2: Sending private DM...')
-      await sendPrivateReplyToComment(pageId, commentId, dmMessage, token, dmImage, dmLinks)
-      console.log('✅ [Webhook] Private DM sent successfully')
+      console.log('🔵 [Webhook] Step 2: Sending private DM...', {
+        commentId,
+        fromUserId,
+        hasImage: !!dmImage,
+        imageUrl: dmImage ? dmImage.substring(0, 80) : 'none',
+        linksCount: dmLinks.length,
+        messageLength: dmMessage.length,
+      })
+      
+      // ✅ ZORCHA-STYLE: Send image as comment reply, then text as direct DM
+      console.log('🔄 [Webhook] Sending private reply (Zorcha-style: image as comment reply, text as direct DM)...')
+      console.log('📋 [Webhook] DM Data:', {
+        hasMessage: !!dmMessage,
+        messageLength: dmMessage?.length || 0,
+        messagePreview: dmMessage ? dmMessage.substring(0, 100) : 'none',
+        hasImage: !!dmImage,
+        imageUrl: dmImage ? dmImage.substring(0, 100) : 'none',
+        linksCount: dmLinks?.length || 0,
+        links: dmLinks?.map(l => l.title) || [],
+        pageId,
+        commentId,
+        instagramScopedId: instagramScopedId || 'NOT PROVIDED (will use comment_id fallback)',
+        tokenPreview: token ? token.substring(0, 30) + '...' : 'none',
+      })
+      
+      try {
+        // ✅ Pass Instagram scoped ID for Step 2 (direct DM after image is sent as comment reply)
+        const result = await sendPrivateReplyToComment(pageId, commentId, dmMessage, token, dmImage, dmLinks, instagramScopedId)
+        if (result) {
+          console.log('✅ [Webhook] Private DM result:', {
+            result,
+            success: result.success,
+            status: result.status,
+            data: result.data,
+            error: result.error,
+            note: 'Only ONE message was sent (image + text + buttons combined)',
+          })
+          
+          if (!result.success) {
+            console.error('⚠️ [Webhook] Private DM returned but success=false:', result)
+          }
+        } else {
+          console.error('❌ [Webhook] sendPrivateReplyToComment returned undefined/null')
+        }
+      } catch (privateReplyError: any) {
+        const errorDetails = privateReplyError.response?.data || privateReplyError.message
+        console.error('❌❌❌ [Webhook] Exception thrown by sendPrivateReplyToComment:', {
+          error: errorDetails,
+          status: privateReplyError.response?.status,
+          errorCode: errorDetails?.error?.code,
+          errorMessage: errorDetails?.error?.message,
+          fullError: JSON.stringify(errorDetails, null, 2),
+          stack: privateReplyError.stack,
+        })
+      }
 
       // ✅ 3. Track response
       console.log('🔵 [Webhook] Step 3: Tracking response...')

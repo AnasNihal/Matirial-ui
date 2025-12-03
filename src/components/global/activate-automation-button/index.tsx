@@ -60,14 +60,14 @@
     if (isLive && !hasChanges) {
       return (
         <div className="relative ml-4 inline-flex items-center">
-          <Button
-            disabled={isPending}
-            onClick={onDeactivate}
+        <Button
+          disabled={isPending}
+          onClick={onDeactivate}
             className="lg:px-10 bg-gradient-to-br hover:opacity-80 text-white rounded-full from-[#D53F3F] font-medium to-[#802020]"
-          >
-            {isPending ? <Loader2 className="animate-spin mr-2" /> : <ActiveAutomation />}
-            <p className="lg:inline hidden">Deactivate</p>
-          </Button>
+        >
+          {isPending ? <Loader2 className="animate-spin mr-2" /> : <ActiveAutomation />}
+          <p className="lg:inline hidden">Deactivate</p>
+        </Button>
         </div>
       )
     }
