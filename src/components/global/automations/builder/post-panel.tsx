@@ -138,6 +138,16 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
                     mediaType: post.media_type,
                     thumbnail: isReel(post) && post.thumbnail_url ? post.thumbnail_url : undefined,
                   }
+                  // Store thumbnail in localStorage for reels so it persists after refresh
+                  if (isReel(post) && post.thumbnail_url) {
+                    try {
+                      localStorage.setItem(`post_${post.id}`, JSON.stringify({
+                        thumbnail: post.thumbnail_url
+                      }))
+                    } catch (e) {
+                      console.warn('Failed to cache reel thumbnail:', e)
+                    }
+                  }
                   setSelectedPost(postData)
                 }}
                 className={`relative aspect-square rounded-lg overflow-hidden border-2 ${
@@ -236,6 +246,16 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
                         caption: post.caption,
                         mediaType: post.media_type,
                         thumbnail: isReel(post) && post.thumbnail_url ? post.thumbnail_url : undefined,
+                      }
+                      // Store thumbnail in localStorage for reels so it persists after refresh
+                      if (isReel(post) && post.thumbnail_url) {
+                        try {
+                          localStorage.setItem(`post_${post.id}`, JSON.stringify({
+                            thumbnail: post.thumbnail_url
+                          }))
+                        } catch (e) {
+                          console.warn('Failed to cache reel thumbnail:', e)
+                        }
                       }
                       setTempSelectedPost(postData)
                     }}

@@ -64,17 +64,12 @@ const DmPanel = ({
   }, [dmImage])
 
   // Sync with parent if callbacks provided - update immediately
+  // Only sync when local state differs from prop (user made a change)
   React.useEffect(() => {
-    if (setDmLinks) {
+    if (setDmLinks && JSON.stringify(localDmLinks) !== JSON.stringify(dmLinks)) {
       setDmLinks(localDmLinks)
     }
-  }, [localDmLinks, setDmLinks])
-
-  React.useEffect(() => {
-    if (setDmImage) {
-      setDmImage(localDmImage)
-    }
-  }, [localDmImage, setDmImage])
+  }, [localDmLinks, setDmLinks, dmLinks])
 
   // Only initialize from database data ONCE on initial load, never reset after user edits
   React.useEffect(() => {
@@ -94,7 +89,12 @@ const DmPanel = ({
       // Convert to base64 for preview/storage
       const reader = new FileReader()
       reader.onloadend = () => {
-        setLocalDmImage(reader.result as string)
+        const imageData = reader.result as string
+        setLocalDmImage(imageData)
+        // Update parent immediately when user selects image
+        if (setDmImage) {
+          setDmImage(imageData)
+        }
       }
       reader.readAsDataURL(file)
     }
@@ -102,6 +102,10 @@ const DmPanel = ({
 
   const handleRemoveImage = () => {
     setLocalDmImage(null)
+    // Update parent immediately when user removes image
+    if (setDmImage) {
+      setDmImage(null)
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }

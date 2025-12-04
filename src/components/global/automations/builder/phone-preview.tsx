@@ -8,6 +8,8 @@ type SelectedPost = {
   id: string
   media: string
   caption?: string
+  mediaType?: 'IMAGE' | 'VIDEO' | 'CAROSEL_ALBUM'
+  thumbnail?: string
 }
 
 type DmLink = {
@@ -142,8 +144,13 @@ export default function PhonePreview({
         >
           {hasPost ? (
             <Image
-              src={selectedPost!.media}
-              alt="post"
+              src={
+                // For reels/videos, use thumbnail if available, otherwise use media URL
+                selectedPost!.mediaType === 'VIDEO' && selectedPost!.thumbnail
+                  ? selectedPost!.thumbnail
+                  : selectedPost!.media
+              }
+              alt={selectedPost!.mediaType === 'VIDEO' ? 'reel' : 'post'}
               fill
               className="object-contain"
               unoptimized

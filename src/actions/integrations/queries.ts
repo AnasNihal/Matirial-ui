@@ -45,7 +45,7 @@ export const createIntegration = async (
   igUsername?: string,
   igProfilePhoto?: string
 ) => {
-  return await client.user.update({
+  const result = await client.user.update({
     where: {
       clerkId,
     },
@@ -63,6 +63,17 @@ export const createIntegration = async (
     select: {
       firstname: true,
       lastname: true,
+      email: true,
     },
   })
+  
+  console.log('💾 [createIntegration] User data returned:', {
+    firstname: result.firstname,
+    lastname: result.lastname,
+    email: result.email,
+    hasFirstname: !!result.firstname,
+    hasLastname: !!result.lastname,
+  })
+  
+  return result
 }

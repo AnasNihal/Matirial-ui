@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useQueryAutomation } from '@/hooks/user-queries'
+import { useQueryAutomation, useQueryAutomationPosts } from '@/hooks/user-queries'
 import { useEditAutomation } from '@/hooks/use-automations'
 import { useMutationData, useMutationDataState } from '@/hooks/use-mutation-data'
 import { Input } from '@/components/ui/input'
@@ -22,6 +22,7 @@ export default function AutomationBuilder({ id }: Props) {
   // ✅ This will throw if QueryClientProvider is not set up
   // Error will be caught by ErrorLogger and logged to terminal
   const { data, refetch, isLoading } = useQueryAutomation(id)
+  const { data: postsData } = useQueryAutomationPosts() // Get Instagram posts to find thumbnail for reels
   
   const { edit, enableEdit, inputRef, isPending: namePending } = useEditAutomation(id)
   const { latestVariable } = useMutationDataState(['update-automation'])
@@ -91,7 +92,7 @@ export default function AutomationBuilder({ id }: Props) {
           postid: previewPost.id,
           media: previewPost.media,
           caption: previewPost.caption || undefined,  // ✅ Handle null/undefined
-          mediaType: 'IMAGE',
+          mediaType: previewPost.mediaType || 'IMAGE',  // ✅ Use actual mediaType (VIDEO for reels)
         },
       ])
       
@@ -151,8 +152,9 @@ export default function AutomationBuilder({ id }: Props) {
         thumbnail: undefined,
       }
       
-      // ✅ If it's a video, try to get thumbnail from localStorage cache first
+      // ✅ If it's a video/reel, try to get thumbnail from multiple sources
       if (postData.mediaType === 'VIDEO') {
+        // First, try localStorage cache
         const cachedPost = localStorage.getItem(`post_${postData.id}`)
         if (cachedPost) {
           try {
@@ -162,6 +164,23 @@ export default function AutomationBuilder({ id }: Props) {
             }
           } catch (e) {
             console.warn('Failed to parse cached post:', e)
+          }
+        }
+        
+        // If not in cache, try to get from Instagram posts data
+        if (!postData.thumbnail && postsData?.data?.data) {
+          const igPosts = postsData.data.data as any[]
+          const matchingPost = igPosts.find((p: any) => p.id === postData.id)
+          if (matchingPost?.thumbnail_url) {
+            postData.thumbnail = matchingPost.thumbnail_url
+            // Cache it for future use
+            try {
+              localStorage.setItem(`post_${postData.id}`, JSON.stringify({
+                thumbnail: matchingPost.thumbnail_url
+              }))
+            } catch (e) {
+              console.warn('Failed to cache post thumbnail:', e)
+            }
           }
         }
       }

@@ -27,7 +27,7 @@ const BottomNav = ({ slug }: Props) => {
 
   const isActive = (label: string) => {
     if (label === 'home') {
-      return page === slug
+      return page === slug || page === ''
     }
     return page === label
   }

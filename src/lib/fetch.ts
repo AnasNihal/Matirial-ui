@@ -4,50 +4,145 @@ const GRAPH_API_VERSION = 'v24.0'
 const GRAPH_BASE_URL = `https://graph.facebook.com/${GRAPH_API_VERSION}`
 
 // -----------------------------
-// GENERATE TOKENS
+// GENERATE TOKENS (Exchange authorization code for access token)
 // -----------------------------
 export const generateTokens = async (code: string) => {
   try {
-    const response = await axios.get(
-      `${GRAPH_BASE_URL}/oauth/access_token`,
+    // ✅ Use environment variables - check both old and new names for compatibility
+    const clientId = process.env.INSTAGRAM_CLIENT_ID || process.env.META_APP_ID
+    const clientSecret = process.env.INSTAGRAM_CLIENT_SECRET || process.env.META_APP_SECRET
+    const redirectUri = process.env.INSTAGRAM_REDIRECT_URI || process.env.META_REDIRECT_URI
+
+    // ✅ Validate required environment variables
+    if (!clientId || !clientSecret || !redirectUri) {
+      const missing = []
+      if (!clientId) missing.push('INSTAGRAM_CLIENT_ID or META_APP_ID')
+      if (!clientSecret) missing.push('INSTAGRAM_CLIENT_SECRET or META_APP_SECRET')
+      if (!redirectUri) missing.push('INSTAGRAM_REDIRECT_URI or META_REDIRECT_URI')
+      
+      const errorMsg = `Missing required environment variables: ${missing.join(', ')}`
+      console.error('❌ [generateTokens]', errorMsg)
+      throw new Error(errorMsg)
+    }
+
+    // ✅ Validate code parameter
+    if (!code || code.trim().length === 0) {
+      const errorMsg = 'Authorization code is missing or empty'
+      console.error('❌ [generateTokens]', errorMsg)
+      throw new Error(errorMsg)
+    }
+
+    // ✅ Clean the code (remove any fragments or extra data)
+    const cleanCode = code.split('#')[0].split('?')[0].trim()
+    
+    console.log('✅ [generateTokens] Environment variables check:', {
+      hasClientId: !!clientId,
+      clientIdLength: clientId?.length || 0,
+      clientIdPreview: clientId ? `${clientId.substring(0, 10)}...` : 'MISSING',
+      hasClientSecret: !!clientSecret,
+      clientSecretLength: clientSecret?.length || 0,
+      hasRedirectUri: !!redirectUri,
+      redirectUri: redirectUri,
+      codeLength: cleanCode.length,
+    })
+
+    // ✅ OLD WORKING VERSION: Use Instagram OAuth endpoint with POST and form data
+    const body = new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+      code: cleanCode,
+    })
+
+    console.log('✅ [generateTokens] Making OAuth request to Instagram API:', {
+      url: 'https://api.instagram.com/oauth/access_token',
+      hasClientId: !!clientId,
+      hasClientSecret: !!clientSecret,
+      redirectUri: redirectUri,
+      codeLength: cleanCode.length,
+    })
+
+    const response = await axios.post(
+      'https://api.instagram.com/oauth/access_token',   // ✅ OLD WORKING ENDPOINT
+      body.toString(),                                   // ✅ Form data as string
       {
-        params: {
-          client_id: process.env.META_APP_ID,
-          client_secret: process.env.META_APP_SECRET,
-          grant_type: 'authorization_code',
-          redirect_uri: process.env.META_REDIRECT_URI,
-          code,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded', // ✅ IMPORTANT: Form data header
         },
       }
     )
 
+    console.log('✅ [generateTokens] Token exchange successful:', {
+      hasAccessToken: !!response.data?.access_token,
+      hasExpiresIn: !!response.data?.expires_in,
+      tokenType: response.data?.token_type,
+      userId: response.data?.user_id,
+    })
+
+    // ✅ Validate response has access_token
+    if (!response.data?.access_token) {
+      throw new Error('Token exchange succeeded but no access_token in response')
+    }
+
     return response.data
   } catch (error: any) {
-    console.error('Error generating tokens:', error.response?.data || error.message)
-    throw error
+    // ✅ Simple error handling (old working version)
+    const errorData = error.response?.data
+    const errorMessage = errorData?.error?.message || errorData?.error_message || error.message
+    const errorCode = errorData?.error?.code || errorData?.error_code
+    
+    console.error('❌ [generateTokens] Token Error:', {
+      message: errorMessage,
+      code: errorCode,
+      fullError: errorData || error.message,
+    })
+    
+    // Throw error with helpful message
+    throw new Error(`Token generation failed: ${errorMessage || error.message}`)
   }
 }
 
 // -----------------------------
-// REFRESH TOKEN
+// REFRESH IG USER TOKEN (LONG-LIVED)
 // -----------------------------
 export const refreshToken = async (longLivedToken: string) => {
   try {
+    // ✅ OLD WORKING VERSION: Use Instagram refresh endpoint
+    const instagramBaseUrl = process.env.INSTAGRAM_BASE_URL || 'https://graph.instagram.com'
+    
+    // ✅ Validate URL format
+    if (!instagramBaseUrl.startsWith('http://') && !instagramBaseUrl.startsWith('https://')) {
+      console.error('❌ [refreshToken] Invalid INSTAGRAM_BASE_URL format:', instagramBaseUrl)
+      return null
+    }
+    
     const response = await axios.get(
-      `${GRAPH_BASE_URL}/oauth/access_token`,
+      `${instagramBaseUrl}/refresh_access_token`,
       {
         params: {
-          grant_type: 'fb_exchange_token',
-          client_id: process.env.META_APP_ID,
-          client_secret: process.env.META_APP_SECRET,
-          fb_exchange_token: longLivedToken,
+          grant_type: 'ig_refresh_token',
+          access_token: longLivedToken,
         },
       }
     )
 
+    // ✅ Validate response exists
+    if (!response || !response.data) {
+      console.error('❌ [refreshToken] Invalid response from Instagram API')
+      return null
+    }
+
+    // Instagram returns: { access_token, token_type, expires_in }
     return response.data
   } catch (error: any) {
-    console.error('❌ Error refreshing IG token:', error)
+    const errorDetails = error.response?.data || error.message
+    console.error('❌ [refreshToken] Error refreshing IG token:', {
+      error: errorDetails,
+      status: error.response?.status,
+      errorCode: errorDetails?.error?.code,
+      errorMessage: errorDetails?.error?.message,
+    })
     return null
   }
 }
@@ -241,50 +336,18 @@ export const sendPrivateReplyToComment = async (
   })
 
   try {
-    // ✅ SINGLE MESSAGE BUBBLE APPROACH: Try to send image + text + button in ONE message
-    // Strategy: Send image with quick_replies (buttons) - Instagram may allow this combination
-    
-    console.log('🔵 [sendPrivateReplyToComment] Starting (Single bubble: image + text + button):', {
-      hasText: !!message,
-      textLength: message.length,
-      hasImage: !!imageUrl,
-      linksCount: links?.length || 0,
-      hasRecipientId: !!recipientId,
-      note: 'Attempting to send everything in ONE message bubble',
-    })
-
     let imageSent = false
     let textSent = false
     let linksSent = 0
     
     // ✅ STEP 1: ALWAYS send image first (as private reply to comment)
-    // This ensures image is sent even if single-bubble approach fails
     if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
       if (imageUrl.startsWith('http://')) {
         console.warn('⚠️ [sendPrivateReplyToComment] Image URL uses HTTP instead of HTTPS. Instagram may reject this.')
       }
       
-      // Build quick_replies from links
-      const quickReplies = links && links.length > 0 
-        ? links.map(link => ({
-            content_type: 'text',
-            title: link.title || 'Click here',
-            payload: link.url,
-          }))
-        : []
-      
-      // Try web_url type first (might work for link previews)
-      const webUrlReplies = links && links.length > 0
-        ? links.map(link => ({
-            content_type: 'web_url',
-            title: link.title || 'Click here',
-            url: link.url,
-          }))
-        : []
-      
       console.log('📷 [sendPrivateReplyToComment] Step 1: Sending image first...')
       
-      // First, send image as private reply (this always works)
       try {
         const imageResponse = await axios.post(
           `${GRAPH_BASE_URL}/${pageId}/messages`,
@@ -313,128 +376,18 @@ export const sendPrivateReplyToComment = async (
         })
         imageSent = true
         
-        // ✅ STEP 2: Now try to send text + buttons as a follow-up direct DM
-        // Since we already used the one private reply for the image, send text+buttons as direct DM
-        if (recipientId && (message || (links && links.length > 0))) {
-          console.log('💬 [sendPrivateReplyToComment] Step 2: Attempting to send text + buttons as follow-up direct DM...')
-          
-          // Try with web_url buttons first (better for link previews)
-          if (webUrlReplies.length > 0) {
-            try {
-              const followUpResponse = await axios.post(
-                `${GRAPH_BASE_URL}/${pageId}/messages`,
-                {
-                  recipient: { id: recipientId },
-                  message: {
-                    text: message || '',
-                    quick_replies: webUrlReplies,
-                  },
-                },
-                {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                  },
-                }
-              )
-              
-              console.log('✅ [sendPrivateReplyToComment] Step 2 SUCCESS: Text + web_url buttons sent!', {
-                status: followUpResponse.status,
-              })
-              textSent = true
-            } catch (webUrlError: any) {
-              const errorDetails = webUrlError.response?.data || webUrlError.message
-              console.warn('⚠️ [sendPrivateReplyToComment] web_url buttons failed, trying text buttons:', {
-                error: errorDetails?.error?.message || errorDetails,
-                errorCode: errorDetails?.error?.code,
-              })
-              
-              // Fallback: Try with text buttons
-              try {
-                const followUpResponse = await axios.post(
-                  `${GRAPH_BASE_URL}/${pageId}/messages`,
-                  {
-                    recipient: { id: recipientId },
-                    message: {
-                      text: message || '',
-                      quick_replies: quickReplies,
-                    },
-                  },
-                  {
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                      'Content-Type': 'application/json',
-                    },
-                  }
-                )
-                
-                console.log('✅ [sendPrivateReplyToComment] Step 2 SUCCESS: Text + text buttons sent!', {
-                  status: followUpResponse.status,
-                })
-                textSent = true
-              } catch (textButtonError: any) {
-                console.warn('⚠️ [sendPrivateReplyToComment] Text buttons failed, sending text only:', {
-                  error: textButtonError.response?.data || textButtonError.message,
-                })
-                
-                // Fallback: Send text only
-                if (message) {
-                  try {
-                    await axios.post(
-                      `${GRAPH_BASE_URL}/${pageId}/messages`,
-                      {
-                        recipient: { id: recipientId },
-                        message: { text: message },
-                      },
-                      {
-                        headers: {
-                          Authorization: `Bearer ${token}`,
-                          'Content-Type': 'application/json',
-                        },
-                      }
-                    )
-                    console.log('✅ [sendPrivateReplyToComment] Text sent separately')
-                    textSent = true
-                  } catch (e: any) {
-                    console.error('❌ [sendPrivateReplyToComment] Failed to send text:', e.response?.data || e.message)
-                  }
-                }
-              }
-            }
-          } else if (message) {
-            // No links, just send text
-            try {
-              await axios.post(
-                `${GRAPH_BASE_URL}/${pageId}/messages`,
-                {
-                  recipient: { id: recipientId },
-                  message: { text: message },
-                },
-                {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                  },
-                }
-              )
-              console.log('✅ [sendPrivateReplyToComment] Text sent separately')
-              textSent = true
-            } catch (e: any) {
-              console.error('❌ [sendPrivateReplyToComment] Failed to send text:', e.response?.data || e.message)
-            }
-          }
-          
-          // ✅ STEP 3: Send links separately (if buttons didn't work or we want link previews)
-          if (links && links.length > 0 && recipientId) {
-            console.log('🔗 [sendPrivateReplyToComment] Step 3: Sending link URLs separately for preview cards...')
+        // ✅ STEP 2: Now try to send text + links as a follow-up direct DM
+        if (message || (links && links.length > 0)) {
+          if (recipientId) {
+            console.log('💬 [sendPrivateReplyToComment] Step 2: Attempting to send text + links as follow-up direct DM...')
             
-            for (const link of links) {
+            if (message) {
               try {
                 await axios.post(
                   `${GRAPH_BASE_URL}/${pageId}/messages`,
                   {
                     recipient: { id: recipientId },
-                    message: { text: link.url }, // URL alone triggers preview card
+                    message: { text: message },
                   },
                   {
                     headers: {
@@ -443,13 +396,42 @@ export const sendPrivateReplyToComment = async (
                     },
                   }
                 )
-                console.log('✅ [sendPrivateReplyToComment] Link URL sent:', link.url)
-                linksSent++
-                await new Promise(resolve => setTimeout(resolve, 500))
+                console.log('✅ [sendPrivateReplyToComment] Text sent separately')
+                textSent = true
               } catch (e: any) {
-                console.error('❌ [sendPrivateReplyToComment] Failed to send link:', e.response?.data || e.message)
+                console.error('❌ [sendPrivateReplyToComment] Failed to send text:', e.response?.data || e.message)
               }
             }
+            
+            // ✅ STEP 3: Send links separately (if buttons didn't work or we want link previews)
+            if (links && links.length > 0) {
+              console.log('🔗 [sendPrivateReplyToComment] Step 3: Sending link URLs separately for preview cards...')
+              
+              for (const link of links) {
+                try {
+                  await axios.post(
+                    `${GRAPH_BASE_URL}/${pageId}/messages`,
+                    {
+                      recipient: { id: recipientId },
+                      message: { text: link.url }, // URL alone triggers preview card
+                    },
+                    {
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                      },
+                    }
+                  )
+                  console.log('✅ [sendPrivateReplyToComment] Link URL sent:', link.url)
+                  linksSent++
+                  await new Promise(resolve => setTimeout(resolve, 500))
+                } catch (e: any) {
+                  console.error('❌ [sendPrivateReplyToComment] Failed to send link:', e.response?.data || e.message)
+                }
+              }
+            }
+          } else {
+            console.warn('⚠️ [sendPrivateReplyToComment] recipientId missing - cannot send text/links as direct DM after image')
           }
         }
       } catch (imageError: any) {
@@ -470,17 +452,33 @@ export const sendPrivateReplyToComment = async (
           console.error('❌❌❌ Get a new token from: https://developers.facebook.com/tools/explorer/')
           console.error('❌❌❌ Or reconnect your Instagram integration in the app')
         }
+        
+        // ✅ FALLBACK: If image fails, try to send text as comment reply
+        if (message) {
+          console.log('🔄 [sendPrivateReplyToComment] Fallback: Attempting to send text as comment reply since image failed...')
+          try {
+            const textResponse = await axios.post(
+              `${GRAPH_BASE_URL}/${pageId}/messages`,
+              {
+                recipient: { comment_id: commentId },
+                message: { text: message },
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              }
+            )
+            console.log('✅ [sendPrivateReplyToComment] Fallback SUCCESS: Text sent as comment reply')
+            textSent = true
+          } catch (fallbackError: any) {
+            console.error('❌ [sendPrivateReplyToComment] Fallback also failed:', fallbackError.response?.data || fallbackError.message)
+          }
+        }
       }
     } else if (!imageUrl && message) {
-      // No image, just text + buttons
-      const quickReplies = links && links.length > 0 
-        ? links.map(link => ({
-            content_type: 'text',
-            title: link.title || 'Click here',
-            payload: link.url,
-          }))
-        : []
-      
+      // No image, just text
       try {
         const textMessageResponse = await axios.post(
           `${GRAPH_BASE_URL}/${pageId}/messages`,
@@ -490,7 +488,6 @@ export const sendPrivateReplyToComment = async (
               : { comment_id: commentId },
             message: {
               text: message,
-              quick_replies: quickReplies,
             },
           },
           {
@@ -501,38 +498,17 @@ export const sendPrivateReplyToComment = async (
           }
         )
         
-        console.log('✅ [sendPrivateReplyToComment] SUCCESS: Text + Buttons message sent!', {
+        console.log('✅ [sendPrivateReplyToComment] SUCCESS: Text message sent!', {
           status: textMessageResponse.status,
           responseData: textMessageResponse.data,
         })
         textSent = true
       } catch (textError: any) {
         const errorDetails = textError.response?.data || textError.message
-        console.error('❌ [sendPrivateReplyToComment] Text + Buttons failed:', {
+        console.error('❌ [sendPrivateReplyToComment] Text message failed:', {
           error: errorDetails?.error?.message || errorDetails,
           errorCode: errorDetails?.error?.code,
         })
-        // Try sending text only
-        if (message && recipientId) {
-          try {
-            await axios.post(
-              `${GRAPH_BASE_URL}/${pageId}/messages`,
-              {
-                recipient: { id: recipientId },
-                message: { text: message },
-              },
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-              }
-            )
-            textSent = true
-          } catch (e: any) {
-            console.error('❌ [sendPrivateReplyToComment] Failed to send text:', e.response?.data || e.message)
-          }
-        }
       }
     }
     
@@ -568,7 +544,6 @@ export const sendPrivateReplyToComment = async (
       fullError: JSON.stringify(errorDetails, null, 2),
       stack: error.stack,
     })
-    // Return error instead of throwing so webhook can handle it
     return { 
       status: error.response?.status || 500, 
       success: false, 
@@ -603,10 +578,14 @@ export const sendPublicReplyToComment = async (
     return response
 
   } catch (error: any) {
-    console.error(
-      'Public Reply Error:',
-      error.response?.data || error.message
-    )
+    const errorDetails = error.response?.data || error.message
+    console.error('❌ [sendPublicReplyToComment] Error:', {
+      error: errorDetails,
+      status: error.response?.status,
+      errorCode: errorDetails?.error?.code,
+      errorMessage: errorDetails?.error?.message,
+      commentId,
+    })
     throw error
   }
 }
@@ -623,13 +602,26 @@ export const getCommentDetails = async (
 ) => {
   try {
     const response = await axios.get(
-      `${GRAPH_BASE_URL}/${commentId}?fields=id,text,from,timestamp&access_token=${token}`
+      `${GRAPH_BASE_URL}/${commentId}`,
+      {
+        params: {
+          fields: 'id,text,from,timestamp',
+          access_token: token,
+        },
+      }
     );
 
     return response.data;
 
   } catch (error: any) {
-    console.error('Get Comment Error:', error.response?.data || error.message);
+    const errorDetails = error.response?.data || error.message
+    console.error('❌ [getCommentDetails] Error:', {
+      error: errorDetails,
+      status: error.response?.status,
+      errorCode: errorDetails?.error?.code,
+      errorMessage: errorDetails?.error?.message,
+      commentId,
+    });
     throw error;
   }
 };

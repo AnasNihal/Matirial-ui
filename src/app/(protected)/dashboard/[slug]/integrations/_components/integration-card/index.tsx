@@ -20,9 +20,27 @@ const IntegrationCard = ({ description, icon, strategy, title }: Props) => {
 
   // ✅ Safe access to integrations - handle null data
   const integrations = data?.data?.integrations || []
+  console.log('🔍 [IntegrationCard] Integrations:', {
+    count: integrations.length,
+    integrations: integrations.map(i => ({ name: i.name, hasToken: !!i.token })),
+    strategy,
+  })
+  
+  // ✅ Find integration - handle both 'INSTAGRAM' strategy and 'INSTAGRAM' name
   const integrated = integrations.find(
-    (integration) => integration.name === strategy
+    (integration) => {
+      // Match by name (database field) or by strategy
+      const nameMatch = integration.name === strategy || 
+                       integration.name === 'INSTAGRAM' && strategy === 'INSTAGRAM'
+      return nameMatch
+    }
   )
+  
+  console.log('🔍 [IntegrationCard] Integration found:', {
+    hasIntegrated: !!integrated,
+    integrationName: integrated?.name,
+    strategy,
+  })
   
   // ✅ Show loading state only on initial load (not when refetching)
   if (isLoading && !data) {

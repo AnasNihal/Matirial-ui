@@ -27,20 +27,30 @@ export const onBoardUser = async () => {
 
         const days = Math.round(time_left / (1000 * 3600 * 24))
         if (days < 5) {
-          console.log('refresh')
+          console.log('🔄 [onBoardUser] Token expires in', days, 'days, refreshing...')
 
           const refresh = await refreshToken(found.integrations[0].token)
 
-          const today = new Date()
-          const expire_date = today.setDate(today.getDate() + 60)
+          if (refresh && refresh.access_token) {
+            const today = new Date()
+            const expire_date = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000) // 60 days
 
-          const update_token = await updateIntegration(
-            refresh.access_token,
-            new Date(expire_date),
-            found.integrations[0].id
-          )
-          if (!update_token) {
-            console.log('Update token failed')
+            try {
+              const update_token = await updateIntegration(
+                found.integrations[0].id,
+                refresh.access_token,
+                expire_date
+              )
+              if (update_token) {
+                console.log('✅ [onBoardUser] Token refreshed successfully')
+              } else {
+                console.error('❌ [onBoardUser] Update token failed - no result returned')
+              }
+            } catch (updateError: any) {
+              console.error('❌ [onBoardUser] Update token failed:', updateError?.message || updateError)
+            }
+          } else {
+            console.error('❌ [onBoardUser] Token refresh failed - no access_token in response')
           }
         }
       }
