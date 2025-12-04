@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import React from 'react'
+import { Home, Search, Plus, Music, Heart, MessageCircle, Send, Bookmark, MoreVertical, ArrowLeft, Phone, Info } from 'lucide-react'
 
 type SelectedPost = {
   id: string
@@ -89,15 +90,14 @@ export default function PhonePreview({
       >
         {/* ---------------- STATUS / TOP NAV ---------------- */}
         <div className="pt-3 pb-1 px-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button className="text-white/80 text-xl leading-none">‹</button>
-              <div className="text-sm text-white font-medium">POSTS</div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button className="text-white/70 text-lg">⋯</button>
-            </div>
+          <div className="flex items-center justify-center relative">
+            <div className="text-sm text-white font-semibold">POSTS</div>
+            <button className="absolute left-0 text-white/80">
+              <ArrowLeft size={20} />
+            </button>
+            <button className="absolute right-0 text-white/70">
+              <MoreVertical size={20} />
+            </button>
           </div>
         </div>
 
@@ -131,8 +131,9 @@ export default function PhonePreview({
             </div>
 
             <div className="flex items-center gap-3">
-              <button className="text-white/70 text-lg">🔍</button>
-              <button className="text-white/70 text-lg">⋯</button>
+              <button className="text-white/70">
+                <MoreVertical size={20} />
+              </button>
             </div>
           </div>
         </div>
@@ -160,7 +161,7 @@ export default function PhonePreview({
           ) : (
             <div className="w-[280px] h-[280px] rounded-md border border-dashed border-white/10 flex items-center justify-center text-center px-4">
               <div className="text-white/60 text-[13px]">
-                You haven’t picked a post or reel for your automation yet
+                You haven't picked a post or reel for your automation yet
               </div>
             </div>
           )}
@@ -168,14 +169,22 @@ export default function PhonePreview({
 
         {/* ---------------- ACTIONS & CAPTION SNIPPET ---------------- */}
         <div className="px-4 pt-3">
-          <div className="flex items-center justify-between text-white text-lg">
+          <div className="flex items-center justify-between text-white">
             <div className="flex items-center gap-4">
-              <button className="text-white/90">♡</button>
-              <button className="text-white/90">💬</button>
-              <button className="text-white/90">✈️</button>
+              <button className="text-white/90">
+                <Heart size={24} className="stroke-current" />
+              </button>
+              <button className="text-white/90">
+                <MessageCircle size={24} className="stroke-current" />
+              </button>
+              <button className="text-white/90">
+                <Send size={24} className="stroke-current" />
+              </button>
             </div>
 
-            <div className="text-white/90">🔖</div>
+            <button className="text-white/90">
+              <Bookmark size={24} className="stroke-current" />
+            </button>
           </div>
 
           <div className="mt-3 text-[13px] text-white/80">
@@ -194,27 +203,21 @@ export default function PhonePreview({
           </div>
         </div>
 
-        {/* ---------------- BOTTOM NAV (fake IG) ---------------- */}
+        {/* ---------------- BOTTOM NAV (Zorcha style) ---------------- */}
         <div
           className="absolute bottom-12 left-0 right-0 px-4"
           style={{ pointerEvents: 'none' }}
         >
           <div className="flex justify-between items-center text-white/60">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-sm">
-                🏠
-              </div>
-              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-sm">
-                🔍
-              </div>
-              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-sm">
-                ⊕
+            <div className="flex items-center gap-6">
+              <Home size={24} className="text-white/60" />
+              <Search size={24} className="text-white/60" />
+              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                <Plus size={20} className="text-white/60" />
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-sm">
-                ♫
-              </div>
+            <div className="flex items-center gap-6">
+              <Music size={24} className="text-white/60" />
             </div>
           </div>
         </div>
@@ -237,20 +240,24 @@ export default function PhonePreview({
               <div className="px-4 pb-4 text-white">
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-center text-sm font-semibold">Comments</div>
-                  <div className="text-white/60 text-sm">✈</div>
+                  <button className="text-white/60">
+                    <Send size={16} />
+                  </button>
                 </div>
 
                 {/* Example comment (user) */}
                 <div className="flex gap-3 mb-3 items-start">
-                  <div className="w-8 h-8 rounded-full bg-white/7 flex items-center justify-center text-xs">
+                  <div className="w-8 h-8 rounded-full bg-white/7 flex items-center justify-center text-xs text-white">
                     U
                   </div>
                   <div className="flex-1">
-                    <div className="text-[13px] font-semibold">User</div>
+                    <div className="text-[13px] font-semibold text-white">User</div>
                     <div className="text-[13px] text-white/70">{keyword || 'Leaves a new comment'}</div>
                     <div className="text-[12px] text-white/50 mt-2">Reply</div>
                   </div>
-                  <div className="text-white/60">♡</div>
+                  <button className="text-white/60">
+                    <Heart size={16} className="stroke-current" />
+                  </button>
                 </div>
 
                 {/* Owner reply (with profilePic fallback) */}
@@ -266,16 +273,18 @@ export default function PhonePreview({
                         unoptimized
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-white/6 flex items-center justify-center"> C </div>
+                      <div className="w-8 h-8 rounded-full bg-white/6 flex items-center justify-center text-xs text-white"> C </div>
                     )}
                   </div>
 
                   <div className="flex-1">
-                    <div className="text-[13px] font-semibold">{username}</div>
+                    <div className="text-[13px] font-semibold text-white">{username}</div>
                     <div className="text-[13px] text-white/70">Youre all set 🎉</div>
                     <div className="text-[12px] text-white/50 mt-2">Reply</div>
                   </div>
-                  <div className="text-white/60">♡</div>
+                  <button className="text-white/60">
+                    <Heart size={16} className="stroke-current" />
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -296,7 +305,9 @@ export default function PhonePreview({
                 {/* header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
                   <div className="flex items-center gap-3">
-                    <button className="text-white text-xl leading-none">‹</button>
+                    <button className="text-white">
+                      <ArrowLeft size={20} />
+                    </button>
                     {profilePic ? (
                       <div className="w-8 h-8 rounded-full overflow-hidden">
                         <Image src={profilePic} width={32} height={32} alt="p" unoptimized />
@@ -310,8 +321,12 @@ export default function PhonePreview({
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-white/70">
-                    <button className="text-lg">📞</button>
-                    <button className="text-lg">ⓘ</button>
+                    <button>
+                      <Phone size={20} />
+                    </button>
+                    <button>
+                      <Info size={20} />
+                    </button>
                   </div>
                 </div>
 
@@ -397,14 +412,25 @@ export default function PhonePreview({
                 {/* composer - User's input area */}
                 <div className="p-4 border-t border-white/10 bg-black">
                   <div className="bg-white/6 rounded-full px-3 py-2.5 flex items-center gap-3">
-                    <button className="text-white/70 text-lg">＋</button>
+                    <button className="text-white/70">
+                      <Plus size={20} />
+                    </button>
                     <input
                       className="bg-transparent outline-none text-white placeholder:text-white/50 flex-1 text-sm"
                       placeholder="Message..."
                       readOnly
                     />
-                    <button className="text-white/70">🎵</button>
-                    <button className="text-white/70">🎤</button>
+                    <button className="text-white/70">
+                      <Music size={20} />
+                    </button>
+                    <button className="text-white/70">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                        <line x1="12" y1="19" x2="12" y2="23" />
+                        <line x1="8" y1="23" x2="16" y2="23" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>
