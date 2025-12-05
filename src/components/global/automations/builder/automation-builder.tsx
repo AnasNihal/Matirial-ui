@@ -393,9 +393,9 @@ async function handleActivate() {
   }
 
   return (
-    <div className="flex flex-col gap-y-8">
-      {/* TOP BAR */}
-      <div className="flex items-center justify-between gap-x-4 bg-[#111] border border-[#2a2a2a] rounded-2xl px-5 py-4">
+    <div className="flex flex-col h-[calc(100vh-2rem)] gap-y-8 overflow-hidden">
+      {/* TOP BAR - Fixed */}
+      <div className="flex-shrink-0 flex items-center justify-between gap-x-4 bg-[#111] border border-[#2a2a2a] rounded-2xl px-5 py-4">
         <div className="flex items-center gap-x-3 min-w-0">
           <button
             className="rounded-full border border-[#333] p-2 hover:bg-[#1a1a1a]"
@@ -447,10 +447,10 @@ async function handleActivate() {
         </div>
       </div>
 
-      {/* MAIN GRID */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        {/* PHONE PREVIEW */}
-        <div className="flex justify-center">
+      {/* MAIN GRID - Flex container with overflow */}
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-6 overflow-hidden min-h-0" style={{ alignContent: 'start' }}>
+        {/* PHONE PREVIEW - Fully Sticky - NO MOVEMENT */}
+        <div className="flex justify-center xl:sticky xl:top-0" style={{ alignSelf: 'start' }}>
           <PhonePreview
             selectedPost={previewPost}
             keyword={keyword}
@@ -464,10 +464,10 @@ async function handleActivate() {
           />
         </div>
 
-        {/* RIGHT SIDE */}
-        <div className="flex flex-col gap-4">
+        {/* RIGHT SIDE - Scrollable */}
+        <div className="flex flex-col gap-4 overflow-y-auto overflow-x-hidden pr-2">
           {/* STEP INDICATOR */}
-          <div className="flex items-center justify-between text-xs text-text-secondary">
+          <div className="flex-shrink-0 flex items-center justify-between text-xs text-text-secondary">
             <div className="flex gap-x-2">
               {['post', 'keyword', 'dm'].map((step) => (
                 <button

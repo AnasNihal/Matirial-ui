@@ -17,7 +17,7 @@ const Layout = async ({ children, params }: Props) => {
           className="
       lg:ml-[250px] 
       lg:pl-10 
-      lg:py-5 
+      lg:pt-2
       flex 
       flex-col 
       overflow-auto
