@@ -95,7 +95,7 @@ const AutomationList = (props: Props) => {
       name: error?.name,
     })
     return (
-      <div className="h-[70vh] flex justify-center items-center flex-col gap-y-3">
+      <div className="h-[70vh] flex justify-center items-center flex-col gap-y-3 px-4 lg:px-8">
         <h3 className="text-lg text-gray-400">Error loading automations</h3>
         <p className="text-sm text-red-400">{String(error?.message || error || 'Unknown error')}</p>
         <CreateAutomation />
@@ -118,7 +118,7 @@ const AutomationList = (props: Props) => {
     if (data && data.status === 200 && (!data.data || !Array.isArray(data.data) || data.data.length === 0)) {
       console.log('🔍 [AutomationList] Empty automations array - data exists but empty')
       return (
-        <div className="h-[70vh] flex justify-center items-center flex-col gap-y-3">
+        <div className="h-[70vh] flex justify-center items-center flex-col gap-y-3 px-4 lg:px-8">
           <h3 className="text-lg text-gray-400">No Automations</h3>
           <CreateAutomation />
         </div>
@@ -128,7 +128,7 @@ const AutomationList = (props: Props) => {
     // ✅ No data or invalid status
     console.log('🔍 [AutomationList] No valid data - data:', !!data, 'dataStatus:', data?.status, 'hasDataArray:', Array.isArray(data?.data), 'dataLength:', data?.data?.length, 'finalList:', finalList?.length)
     return (
-      <div className="h-[70vh] flex justify-center items-center flex-col gap-y-3">
+      <div className="h-[70vh] flex justify-center items-center flex-col gap-y-3 px-4 lg:px-8">
         <h3 className="text-lg text-gray-400">No Automations</h3>
         <CreateAutomation />
       </div>
@@ -138,14 +138,14 @@ const AutomationList = (props: Props) => {
   console.log('✅ [AutomationList] Rendering', finalList.length, 'automations')
 
   return (
-    <div className="flex flex-col gap-y-3">
+    <div className="flex flex-col gap-y-3 items-center px-[6px]">
       {finalList.map((automation: any) => (
         <Link
           href={`${pathname}/${automation.id}`}
           key={automation.id}
           prefetch={true} // ⚡ Next.js prefetching
           onMouseEnter={() => handleMouseEnter(automation.id)} // ⚡ React Query prefetching on hover
-          className="bg-[#1D1D1D] hover:opacity-80 transition duration-100 rounded-xl p-5 border-[1px] radial--gradient--automations flex border-[#545454]"
+          className="bg-[#1D1D1D] hover:opacity-80 transition duration-100 rounded-xl p-5 border-[1px] radial--gradient--automations flex border-[#545454] w-full"
         >
           <div className="flex flex-col flex-1 items-start">
             <h2 className="text-xl font-semibold">{automation.name}</h2>

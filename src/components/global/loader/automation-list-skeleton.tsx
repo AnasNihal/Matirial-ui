@@ -1,11 +1,11 @@
 // ⚡ Loading skeleton for automation list
 export default function AutomationListSkeleton() {
   return (
-    <div className="flex flex-col gap-y-3 animate-pulse">
+    <div className="flex flex-col gap-y-3 items-center animate-pulse px-[6px]">
       {[1, 2, 3].map((i) => (
         <div
           key={i}
-          className="bg-[#1D1D1D] rounded-xl p-5 border-[1px] border-[#545454]"
+          className="bg-[#1D1D1D] rounded-xl p-5 border-[1px] border-[#545454] w-full"
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">

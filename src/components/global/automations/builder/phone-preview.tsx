@@ -169,7 +169,7 @@ export default function PhonePreview({
           ) : (
             <div className="w-[280px] h-[280px] rounded-md border border-dashed border-white/10 flex items-center justify-center text-center px-4">
               <div className="text-white/60 text-[13px]">
-                You haven't picked a post or reel for your automation yet
+                You havent picked a post or reel for your automation yet
               </div>
             </div>
           )}
