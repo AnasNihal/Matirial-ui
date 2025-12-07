@@ -67,6 +67,7 @@ const CreateAutomation = (props: Props) => {
 
   return (
     <Button
+      data-create-automation
       className="lg:px-10 py-6 bg-gradient-to-br hover:opacity-80 text-white rounded-full from-[#3352CC] font-medium to-[#1C2D70] disabled:opacity-50 disabled:cursor-not-allowed"
       onClick={handleCreate}
       disabled={isPending || isCreating}

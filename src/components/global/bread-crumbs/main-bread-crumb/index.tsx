@@ -14,11 +14,11 @@ const MainBreadCrumb = ({ page, slug }: Props) => {
       <div className="radial--gradient inline-flex w-full py-3 lg:py-4 pr-16 gap-x-2 items-center justify-between">
         <span className="inline-flex gap-x-2 items-center">
           {PAGE_ICON[page.toUpperCase()]}
-          <h2 className="font-semibold text-3xl capitalize">{page}</h2>
+          <h2 className="font-semibold text-xl capitalize">{page}</h2>
         </span>
         <Button 
           variant="ghost" 
-          className="text-text-secondary hover:text-app-text-primary hover:bg-app-bg-secondary"
+          className="text-text-secondary hover:text-app-text-primary hover:bg-app-bg-secondary ml-auto"
         >
           <HelpCircle className="w-5 h-5 mr-2" />
           Support

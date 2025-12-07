@@ -2,20 +2,26 @@
 import { usePaths } from '@/hooks/user-nav'
 import { cn, getMonth } from '@/lib/utils'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import React, { useMemo } from 'react'
 import GradientButton from '../gradient-button'
 import { Button } from '@/components/ui/button'
 import { useQueryAutomations } from '@/hooks/user-queries'
 import CreateAutomation from '../create-automation'
 import { useMutationDataState } from '@/hooks/use-mutation-data'
+import { useCreateAutomation } from '@/hooks/use-automations'
+import { v4 } from 'uuid'
 import AutomationListSkeleton from '../loader/automation-list-skeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { getAutomationInfo } from '@/actions/automations'
+import SearchButton from './search-button'
+import { Calendar, Plus } from 'lucide-react'
 
 type Props = {}
 
 const AutomationList = (props: Props) => {
   const { data, isLoading, error, isFetching, isError } = useQueryAutomations()
+  const router = useRouter()
   
   // ✅ Get QueryClient - will throw if provider not set up (caught by ErrorLogger)
   const queryClient = useQueryClient()
@@ -23,6 +29,7 @@ const AutomationList = (props: Props) => {
   // Removed excessive console logging to prevent terminal spam
 
   const { latestVariable } = useMutationDataState(['create-automation'])
+  const { mutate: createAutomation, isPending: isCreating } = useCreateAutomation()
   const paths = usePaths()
   const pathname = paths?.pathname || ''
   
@@ -101,76 +108,148 @@ const AutomationList = (props: Props) => {
     )
   }
 
+  // Format date helper
+  const formatDate = (date: Date) => {
+    const now = new Date()
+    const diffTime = Math.abs(now.getTime() - date.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    if (diffDays === 1) return '1 day ago'
+    if (diffDays < 7) return `${diffDays} days ago`
+    if (diffDays < 30) {
+      const weeks = Math.floor(diffDays / 7)
+      return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`
+    }
+    
+    const month = getMonth(date.getUTCMonth() + 1)
+    const day = date.getUTCDate()
+    return `${month} ${day}`
+  }
+
   return (
-    <div className="flex flex-col gap-y-3 items-center px-[6px]">
-      {finalList.map((automation: any) => (
-        <Link
-          href={`${pathname}/${automation.id}`}
-          key={automation.id}
-          prefetch={true} // ⚡ Next.js prefetching
-          onMouseEnter={() => handleMouseEnter(automation.id)} // ⚡ React Query prefetching on hover
-          className="bg-app-card-bg hover:opacity-80 transition duration-100 rounded-xl p-5 border-[1px] radial--gradient--automations flex border-app-border-secondary w-full"
+    <div className="flex flex-col gap-y-6 w-full px-[6px]">
+      {/* Search and Create Automation Bar */}
+      <div className="flex items-center justify-between gap-4 w-full">
+        <SearchButton />
+        <Button
+          onClick={(e) => {
+            e.preventDefault()
+            if (isCreating) return
+            
+            const newId = v4()
+            createAutomation(
+              {
+                name: 'Untitled',
+                id: newId,
+                createdAt: new Date(),
+                keywords: [],
+              },
+              {
+                onSuccess: (response: any) => {
+                  if (response?.status === 200 && response?.res?.id) {
+                    const automationId = response.res.id
+                    const currentPath = window.location.pathname
+                    const basePath = currentPath.split('/automations')[0]
+                    router.push(`${basePath}/automations/${automationId}`)
+                  }
+                },
+              }
+            )
+          }}
+          disabled={isCreating}
+          className="px-4 py-2 bg-gradient-to-br from-[#3352CC] to-[#1C2D70] hover:opacity-90 text-white rounded-lg font-medium text-sm flex items-center gap-2 disabled:opacity-50"
         >
-          <div className="flex flex-col flex-1 items-start">
-            <h2 className="text-xl font-semibold text-app-text-primary">{automation.name}</h2>
-            <p className="text-text-secondary text-sm font-light mb-2">
-              This is from the comment
-            </p>
+          <Plus className="w-4 h-4" />
+          New
+        </Button>
+      </div>
 
-            {automation.keywords.length > 0 ? (
-              <div className="flex gap-x-2 flex-wrap mt-3">
-                {
-                  //@ts-ignore
-                  automation.keywords.map((keyword, key) => (
-                    <div
-                      key={keyword.id}
-                      className={cn(
-                        'rounded-full px-4 py-1 capitalize',
-                        (0 + 1) % 1 == 0 &&
-                          'bg-keyword-green/15 border-2 border-keyword-green',
-                        (1 + 1) % 2 == 0 &&
-                          'bg-keyword-purple/15 border-2 border-keyword-purple',
-                        (2 + 1) % 3 == 0 &&
-                          'bg-keyword-yellow/15 border-2 border-keyword-yellow',
-                        (3 + 1) % 4 == 0 &&
-                          'bg-keyword-red/15 border-2 border-keyword-red'
-                      )}
-                    >
-                      {keyword.word}
+      {/* Table Headers */}
+      <div className="hidden md:grid grid-cols-[2fr_1fr_auto] gap-4 items-center px-4 text-sm text-app-text-secondary border-b border-app-border pb-2">
+        <div className="font-medium">Automation</div>
+        <div className="text-right font-medium flex items-center justify-end gap-1">
+          <Calendar className="w-4 h-4" />
+          Last Published
+        </div>
+        <div className="text-center font-medium ml-8">Status</div>
+      </div>
+
+      {/* Automation Cards */}
+      <div className="flex flex-col gap-y-3">
+        {finalList.map((automation: any) => {
+          const isActive = automation.active
+          const status = isActive ? 'Live' : 'Draft'
+          const statusColor = isActive 
+            ? 'bg-green-500/10 text-green-500 border-green-500/20' 
+            : 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+          
+          return (
+            <div
+              key={automation.id}
+              className="bg-app-card-bg hover:bg-app-bg-secondary transition-colors rounded-lg border border-app-border p-4 shadow-sm"
+            >
+              <div className="flex flex-col md:grid md:grid-cols-[2fr_1fr_auto] gap-4 md:items-center">
+                {/* Automation Info - Mobile: Full width, Desktop: Grid column */}
+                <Link
+                  href={`${pathname}/${automation.id}`}
+                  prefetch={true}
+                  onMouseEnter={() => handleMouseEnter(automation.id)}
+                  className="flex items-center gap-3 group min-w-0"
+                >
+                  {/* Image/Icon */}
+                  <div className="w-14 h-14 rounded-lg bg-app-bg-secondary border border-app-border flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <div className="w-full h-full bg-gradient-to-br from-app-blue to-app-blue-dark flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">
+                        {automation.name.charAt(0).toUpperCase()}
+                      </span>
                     </div>
-                  ))
-                }
-              </div>
-            ) : (
-              <div className="rounded-full border-2 mt-3 border-dashed border-app-border-secondary px-3 py-1">
-                <p className="text-sm text-app-text-tertiary">No Keywords</p>
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col justify-between">
-            <p className="capitalize text-sm font-light text-text-secondary">
-              {(() => {
-                // ✅ Fast date formatting
-                const date = new Date(automation.createdAt)
-                return `${getMonth(date.getUTCMonth() + 1)} ${date.getUTCDate() === 1 ? `${date.getUTCDate()}st` : `${date.getUTCDate()}th`} ${date.getUTCFullYear()}`
-              })()}
-            </p>
+                  </div>
+                  
+                  {/* Name and Trigger */}
+                  <div className="flex flex-col gap-1 min-w-0 flex-1">
+                    <h3 className="font-semibold text-base text-app-text-primary group-hover:text-app-blue transition-colors truncate">
+                      {automation.name}
+                    </h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-app-text-secondary whitespace-nowrap">
+                        When user comments
+                      </span>
+                      {automation.keywords && automation.keywords.length > 0 && (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-500 border border-purple-500/20 whitespace-nowrap">
+                          {automation.keywords[0].word}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
 
-            {automation.listener?.listener === 'SMARTAI' ? (
-              <GradientButton
-                type="BUTTON"
-                className="w-full bg-background-80 text-white hover:bg-background-80"
-              >
-                Smart AI
-              </GradientButton>
-            ) : (
-              <Button className="bg-background-80 hover:bg-background-80 text-white">
-                Standard
-              </Button>
-            )}
-          </div>
-        </Link>
-      ))}
+                {/* Mobile: Status and Last Published in a row */}
+                <div className="flex md:hidden items-center justify-between gap-2 mt-2 pt-3 border-t border-app-border">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColor}`}>
+                    {status}
+                  </span>
+                  <div className="flex items-center gap-1 text-sm text-app-text-secondary">
+                    <Calendar className="w-4 h-4" />
+                    <span>{automation.createdAt ? formatDate(new Date(automation.createdAt)) : 'N/A'}</span>
+                  </div>
+                </div>
+
+                {/* Desktop: Last Published */}
+                <div className="hidden md:block text-right text-sm text-app-text-secondary whitespace-nowrap">
+                  {automation.createdAt ? formatDate(new Date(automation.createdAt)) : 'N/A'}
+                </div>
+
+                {/* Desktop: Status */}
+                <div className="hidden md:block text-center ml-8">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColor}`}>
+                    {status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
