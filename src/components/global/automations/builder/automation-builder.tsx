@@ -497,20 +497,22 @@ async function handleActivate() {
       </div>
 
       {/* MAIN GRID - Flex container with overflow */}
-      <div className="flex-1 grid grid-cols-1 xl:grid-cols-[38%_62%] gap-6 overflow-hidden min-h-0" style={{ alignContent: 'start' }}>
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-[45%_55%] gap-6 overflow-hidden min-h-0" style={{ alignContent: 'start' }}>
         {/* PHONE PREVIEW - Fully Sticky - NO MOVEMENT */}
-        <div className="flex justify-center xl:sticky xl:top-0" style={{ alignSelf: 'start' }}>
-          <PhonePreview
-            selectedPost={previewPost}
-            keyword={keyword}
-            dmText={dmText}
-            dmEnabled={dmEnabled}
-            activeStep={activeStep}
-            username={igUsername}
-            profilePic={igProfilePic}
-            dmImage={dmImage}
-            dmLinks={dmLinks}
-          />
+        <div className="flex justify-center xl:sticky xl:top-0 xl:h-[calc(100vh-2rem-80px-2rem)] xl:overflow-hidden" style={{ alignSelf: 'start' }}>
+          <div className="xl:flex xl:items-center xl:h-full">
+            <PhonePreview
+              selectedPost={previewPost}
+              keyword={keyword}
+              dmText={dmText}
+              dmEnabled={dmEnabled}
+              activeStep={activeStep}
+              username={igUsername}
+              profilePic={igProfilePic}
+              dmImage={dmImage}
+              dmLinks={dmLinks}
+            />
+          </div>
         </div>
 
         {/* RIGHT SIDE - Scrollable */}
