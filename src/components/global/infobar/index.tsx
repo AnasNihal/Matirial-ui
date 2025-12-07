@@ -10,7 +10,8 @@ type Props = {
 }
 
 const InfoBar = ({ slug }: Props) => {
-  const { page } = usePaths()
+  const paths = usePaths()
+  const page = paths?.page || ''
   const currentPage = PAGE_BREAD_CRUMBS.includes(page) || page == slug
 
   return (

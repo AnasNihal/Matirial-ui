@@ -2,14 +2,22 @@
 import { usePathname } from 'next/navigation'
 
 export const usePaths = () => {
+  // ✅ Call usePathname unconditionally (required by React hooks rules)
+  // Next.js usePathname should handle context availability internally
   const pathname = usePathname()
   
-  if (!pathname) {
+  // ✅ Always return safe defaults if pathname is not available
+  if (!pathname || typeof pathname !== 'string') {
     return { page: '', pathname: '' }
   }
   
-  const path = pathname.split('/')
-  let page = path[path.length - 1] || ''
-  
-  return { page, pathname }
+  // ✅ Safely parse path with error handling
+  try {
+    const path = pathname.split('/').filter(Boolean) // Remove empty strings
+    const page = path[path.length - 1] || ''
+    return { page, pathname }
+  } catch {
+    // If parsing fails, return safe defaults
+    return { page: '', pathname: '' }
+  }
 }

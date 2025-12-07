@@ -22,7 +22,8 @@ type Props = {
 }
 
 const BottomNav = ({ slug }: Props) => {
-  const { page } = usePaths()
+  const paths = usePaths()
+  const page = paths?.page || ''
   const [isMoreOpen, setIsMoreOpen] = React.useState(false)
 
   const isActive = (label: string) => {

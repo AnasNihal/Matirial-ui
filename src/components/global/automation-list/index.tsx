@@ -23,7 +23,8 @@ const AutomationList = (props: Props) => {
   // Removed excessive console logging to prevent terminal spam
 
   const { latestVariable } = useMutationDataState(['create-automation'])
-  const { pathname } = usePaths()
+  const paths = usePaths()
+  const pathname = paths?.pathname || ''
   
   // ⚡ PREFETCH: Prefetch automation data on hover for instant loading
   const handleMouseEnter = React.useCallback((automationId: string) => {

@@ -30,7 +30,8 @@ type Props = {}
 const Page = (props: Props) => {
   const { data: automationsData, isLoading: automationsLoading, isFetching: automationsFetching } = useQueryAutomations()
   const { data: userData, isLoading: userLoading, isFetching: userFetching } = useQueryUser()
-  const { pathname } = usePaths()
+  const paths = usePaths()
+  const pathname = paths?.pathname || ''
 
   const automations = automationsData?.data || []
   const integrations = userData?.data?.integrations || []

@@ -15,7 +15,8 @@ type Props = {
 }
 
 const Sidebar = ({ slug }: Props) => {
-  const { page } = usePaths()
+  const paths = usePaths()
+  const page = paths?.page || ''
 
   return (
     <div
