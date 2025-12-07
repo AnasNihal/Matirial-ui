@@ -25,17 +25,17 @@ export default function DataPrefetcher() {
             queryKey: ['user-profile'],
             queryFn: onUserInfo,
             staleTime: Infinity,
-          }),
+          }).catch(() => {}), // Silent fail - prefetching is non-critical
           queryClient.prefetchQuery({
             queryKey: ['user-automations'],
             queryFn: getAllAutomations,
             staleTime: Infinity,
-          }),
+          }).catch(() => {}), // Silent fail - prefetching is non-critical
           queryClient.prefetchQuery({
             queryKey: ['instagram-media'],
             queryFn: getProfilePosts,
             staleTime: Infinity,
-          }),
+          }).catch(() => {}), // Silent fail - prefetching is non-critical
         ])
       } catch (error) {
         // Silent fail - prefetching is non-critical

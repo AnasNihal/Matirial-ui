@@ -175,8 +175,8 @@ const DmPanel = ({
   return (
     <div
       className={`rounded-xl border ${
-        isActive ? 'border-blue-500' : 'border-[#2a2a2a]'
-      } bg-[#101010] p-4`}
+        isActive ? 'border-blue-500' : 'border-app-border'
+      } bg-app-card-bg p-4`}
       onClick={onFocus}
     >
       <div className="flex items-center justify-between mb-3">
@@ -199,7 +199,7 @@ const DmPanel = ({
       {dmEnabled && (
         <div className="flex flex-col gap-3 mt-2">
           {/* Media Preview Section */}
-          <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-[#121212] border border-[#333]">
+          <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-app-bg-tertiary border border-app-border">
             {localDmImage ? (
               <>
                 <img
@@ -219,7 +219,7 @@ const DmPanel = ({
                   />
                   <label
                     htmlFor="dm-image-input"
-                    className="flex items-center gap-1.5 bg-black/70 hover:bg-black/90 text-white text-xs px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
+                    className="flex items-center gap-1.5 bg-app-text-primary/70 dark:bg-black/70 hover:bg-app-text-primary/90 dark:hover:bg-black/90 text-app-bg-primary dark:text-white text-xs px-3 py-1.5 rounded-lg cursor-pointer transition-colors"
                   >
                     <Camera className="h-3.5 w-3.5" />
                     Change
@@ -228,7 +228,7 @@ const DmPanel = ({
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute bottom-2 right-2 bg-black/70 hover:bg-black/90 text-white p-1.5 rounded-full transition-colors"
+                  className="absolute bottom-2 right-2 bg-app-text-primary/70 dark:bg-black/70 hover:bg-app-text-primary/90 dark:hover:bg-black/90 text-app-bg-primary dark:text-white p-1.5 rounded-full transition-colors"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -245,7 +245,7 @@ const DmPanel = ({
                 />
                 <label
                   htmlFor="dm-image-input"
-                  className="flex items-center gap-1.5 bg-[#1a1a1a] hover:bg-[#222] text-text-secondary text-xs px-4 py-2 rounded-lg cursor-pointer transition-colors border border-[#333]"
+                  className="flex items-center gap-1.5 bg-app-bg-secondary hover:bg-app-bg-tertiary text-text-secondary text-xs px-4 py-2 rounded-lg cursor-pointer transition-colors border border-app-border"
                 >
                   <Camera className="h-4 w-4" />
                   Add Image
@@ -265,7 +265,7 @@ const DmPanel = ({
                   setDmPreview(value)
                 }
               }}
-              className="bg-[#121212] border-[#333] text-xs h-10 pr-20"
+              className="bg-app-bg-tertiary border-app-border text-xs h-10 pr-20"
               placeholder="This is something new"
               maxLength={80}
             />
@@ -275,7 +275,7 @@ const DmPanel = ({
               </span>
               <button
                 type="button"
-                className="text-text-secondary hover:text-white transition-colors"
+                className="text-text-secondary hover:text-app-text-primary transition-colors"
                 onClick={() => {
                   // Emoji picker would go here - for now just a button
                   const emoji = '😊'
@@ -295,23 +295,23 @@ const DmPanel = ({
               {localDmLinks.map((link, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5"
+                  className="flex items-center gap-2 bg-app-card-bg border border-app-border rounded-xl px-3 py-2.5"
                 >
                   <Paperclip className="h-4 w-4 text-purple-500 flex-shrink-0" />
-                  <span className="flex-1 text-xs text-gray-800 truncate font-medium">
+                  <span className="flex-1 text-xs text-app-text-primary truncate font-medium">
                     {link.title}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleOpenLinkModal(index)}
-                    className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                    className="text-text-secondary hover:text-app-text-primary transition-colors p-1"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDeleteLink(index)}
-                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                    className="text-text-secondary hover:text-red-500 transition-colors p-1"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

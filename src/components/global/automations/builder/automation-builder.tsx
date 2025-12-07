@@ -1,7 +1,8 @@
 'use client'
 
 import React from 'react'
-import { useQueryAutomation, useQueryAutomationPosts } from '@/hooks/user-queries'
+import { useQueryAutomation, useQueryAutomationPosts, useQueryUser } from '@/hooks/user-queries'
+import IntegrationWarningModal from './integration-warning-modal'
 import { useEditAutomation } from '@/hooks/use-automations'
 import { useMutationData, useMutationDataState } from '@/hooks/use-mutation-data'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,47 @@ export default function AutomationBuilder({ id }: Props) {
   // Error will be caught by ErrorLogger and logged to terminal
   const { data, refetch, isLoading } = useQueryAutomation(id)
   const { data: postsData } = useQueryAutomationPosts() // Get Instagram posts to find thumbnail for reels
+  const { data: userData, refetch: refetchUser } = useQueryUser()
+  
+  // ✅ Check if no integration exists (show modal when posts fetch detects no integration)
+  const [showIntegrationWarning, setShowIntegrationWarning] = React.useState(false)
+  const [instagramUsername, setInstagramUsername] = React.useState<string | null>(null)
+  
+  // ✅ Monitor posts data for no integration error
+  React.useEffect(() => {
+    if (postsData?.status === 403) {
+      const errorType = (postsData as any)?.error
+      if (errorType === 'NO_INTEGRATION' || errorType === 'INTEGRATION_PERMISSION_REMOVED') {
+        setInstagramUsername((postsData as any).instagramUsername || null)
+        setShowIntegrationWarning(true)
+      }
+    } else if (postsData?.status === 200) {
+      // Integration is working, close modal if open
+      setShowIntegrationWarning(false)
+    }
+  }, [postsData])
+  
+  // ✅ Check user data - if integration is restored, close modal
+  React.useEffect(() => {
+    if (userData?.data?.integrations && userData.data.integrations.length > 0) {
+      const integration = userData.data.integrations[0]
+      if (integration.token) {
+        // Integration restored, close modal
+        setShowIntegrationWarning(false)
+      }
+    }
+  }, [userData])
+  
+  // ✅ Refetch user data periodically when modal is open to check if integration is restored
+  React.useEffect(() => {
+    if (showIntegrationWarning) {
+      const interval = setInterval(() => {
+        refetchUser()
+      }, 3000) // Check every 3 seconds
+      
+      return () => clearInterval(interval)
+    }
+  }, [showIntegrationWarning, refetchUser])
   
   const { edit, enableEdit, inputRef, isPending: namePending } = useEditAutomation(id)
   const { latestVariable } = useMutationDataState(['update-automation'])
@@ -393,12 +435,19 @@ async function handleActivate() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-2rem)] gap-y-8 overflow-hidden">
+    <>
+      {/* Integration Warning Modal - Shows when no integration detected during post fetch */}
+      <IntegrationWarningModal
+        open={showIntegrationWarning}
+        instagramUsername={instagramUsername}
+      />
+      
+      <div className="flex flex-col h-[calc(100vh-2rem)] gap-y-8 overflow-hidden">
       {/* TOP BAR - Fixed */}
-      <div className="flex-shrink-0 flex items-center justify-between gap-x-4 bg-[#111] border border-[#2a2a2a] rounded-2xl px-5 py-4">
+      <div className="flex-shrink-0 flex items-center justify-between gap-x-4 bg-app-card-bg border border-app-border rounded-2xl px-5 py-4">
         <div className="flex items-center gap-x-3 min-w-0">
           <button
-            className="rounded-full border border-[#333] p-2 hover:bg-[#1a1a1a]"
+            className="rounded-full border border-app-border p-2 hover:bg-app-bg-secondary"
             onClick={() => history.back()}
           >
             <ChevronLeft size={18} />
@@ -412,10 +461,10 @@ async function handleActivate() {
                 <Input
                   ref={inputRef}
                   placeholder={namePending ? latestVariable?.variables : 'Add a new name'}
-                  className="bg-transparent h-auto outline-none text-base border-none p-0"
+                  className="bg-transparent h-auto outline-none text-base border-none p-0 text-app-text-primary"
                 />
               ) : (
-                <p className="text-base truncate">
+                <p className="text-base truncate text-app-text-primary">
                   {latestVariable?.variables ? latestVariable.variables.name : data.data.name}
                 </p>
               )}
@@ -448,7 +497,7 @@ async function handleActivate() {
       </div>
 
       {/* MAIN GRID - Flex container with overflow */}
-      <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-6 overflow-hidden min-h-0" style={{ alignContent: 'start' }}>
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-[38%_62%] gap-6 overflow-hidden min-h-0" style={{ alignContent: 'start' }}>
         {/* PHONE PREVIEW - Fully Sticky - NO MOVEMENT */}
         <div className="flex justify-center xl:sticky xl:top-0" style={{ alignSelf: 'start' }}>
           <PhonePreview
@@ -475,8 +524,8 @@ async function handleActivate() {
                   onClick={() => setActiveStep(step as 'post' | 'keyword' | 'dm')}
                   className={`px-3 py-1 rounded-full border text-xs capitalize ${
                     activeStep === step
-                      ? 'border-blue-500 text-white bg-blue-500/10'
-                      : 'border-[#333] hover:bg-[#181818]'
+                      ? 'border-app-blue text-app-text-primary bg-app-blue/10'
+                      : 'border-app-border hover:bg-app-bg-secondary'
                   }`}
                 >
                   {step}
@@ -496,7 +545,7 @@ async function handleActivate() {
                   if (activeStep === 'post') setActiveStep('keyword')
                   else if (activeStep === 'keyword') setActiveStep('dm')
                 }}
-                className="rounded-full border border-[#333] p-1 hover:bg-[#181818]"
+                className="rounded-full border border-app-border p-1 hover:bg-app-bg-secondary"
               >
                 <ChevronRight size={16} />
               </button>
@@ -538,5 +587,6 @@ async function handleActivate() {
         </div>
       </div>
     </div>
+    </>
   )
 }

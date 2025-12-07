@@ -431,15 +431,25 @@ export const getProfilePosts = async () => {
     const integration = profile?.integrations?.[0]
     console.log('🔍 [getProfilePosts] Integration found:', !!integration, 'hasToken:', !!integration?.token)
     
-    if (!integration || !integration.token) {
-      console.warn('⚠️ [getProfilePosts] No integration or token found')
-      console.warn('⚠️ [getProfilePosts] Debug info:', {
-        hasProfile: !!profile,
-        integrationsLength: profile?.integrations?.length || 0,
-        firstIntegrationExists: !!profile?.integrations?.[0],
-        firstIntegrationHasToken: !!profile?.integrations?.[0]?.token,
-      })
-      return { status: 404, data: { data: [] } }
+    // ✅ Check if there's NO integration at all (not just missing token)
+    if (!profile?.integrations || profile.integrations.length === 0 || !integration) {
+      console.warn('⚠️ [getProfilePosts] No integration found')
+      return { 
+        status: 403, 
+        data: { data: [] },
+        error: 'NO_INTEGRATION'
+      }
+    }
+    
+    // ✅ Check if integration exists but token is missing
+    if (!integration.token) {
+      console.warn('⚠️ [getProfilePosts] Integration exists but token is missing')
+      return { 
+        status: 403, 
+        data: { data: [] },
+        error: 'INTEGRATION_PERMISSION_REMOVED',
+        instagramUsername: integration.instagramUsername || null
+      }
     }
 
     let token = integration.token

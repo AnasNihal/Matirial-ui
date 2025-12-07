@@ -25,8 +25,8 @@ const KeywordPanel = ({
   return (
     <div
       className={`rounded-xl border ${
-        isActive ? 'border-blue-500' : 'border-[#2a2a2a]'
-      } bg-[#101010] p-4`}
+        isActive ? 'border-blue-500' : 'border-app-border'
+      } bg-app-card-bg p-4`}
       onClick={onFocus}
     >
       <div className="flex items-center justify-between mb-3">
@@ -45,7 +45,7 @@ const KeywordPanel = ({
         {data?.data?.keywords?.map((k) => (
           <span
             key={k.id}
-            className="px-3 py-1 rounded-full bg-[#181818] text-xs capitalize"
+            className="px-3 py-1 rounded-full bg-app-bg-secondary text-xs capitalize text-app-text-primary"
           >
             {k.word}
           </span>
@@ -60,7 +60,7 @@ const KeywordPanel = ({
         }}
         onKeyDown={onKeyPress}
         placeholder="Type keyword and press Enter to save (e.g. 'demo', 'pricing')"
-        className="bg-[#121212] border-[#333] text-xs"
+        className="bg-app-bg-tertiary border-app-border text-xs"
       />
     </div>
   )

@@ -18,12 +18,11 @@ const AutomationsBreadCrumb = ({ id }: Props) => {
   const { latestVariable } = useMutationDataState(['update-automation'])
 
   return (
-    <div className="rounded-full w-full p-5 bg-[#18181B1A] flex items-center">
+    <div className="rounded-full w-full p-5 bg-app-bg-secondary/50 flex items-center">
       <div className="flex items-center gap-x-3 min-w-0">
-        <p className="text-[#9B9CA0] truncate">Automations</p>
+        <p className="text-text-secondary truncate">Automations</p>
         <ChevronRight
-          className="flex-shrink-0"
-          color="#9B9CA0"
+          className="flex-shrink-0 text-text-secondary"
         />
         <span className="flex gap-x-3 items-center min-w-0">
           {edit ? (
@@ -35,7 +34,7 @@ const AutomationsBreadCrumb = ({ id }: Props) => {
               className="bg-transparent h-auto outline-none text-base border-none p-0"
             />
           ) : (
-            <p className="text-[#9B9CA0] truncate">
+            <p className="text-text-secondary truncate">
               {latestVariable?.variables
                 ? latestVariable?.variables.name
                 : data?.data?.name}

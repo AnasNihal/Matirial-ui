@@ -28,8 +28,8 @@ import Image from 'next/image'
 type Props = {}
 
 const Page = (props: Props) => {
-  const { data: automationsData, isLoading: automationsLoading } = useQueryAutomations()
-  const { data: userData } = useQueryUser()
+  const { data: automationsData, isLoading: automationsLoading, isFetching: automationsFetching } = useQueryAutomations()
+  const { data: userData, isLoading: userLoading, isFetching: userFetching } = useQueryUser()
   const { pathname } = usePaths()
 
   const automations = automationsData?.data || []
@@ -44,7 +44,9 @@ const Page = (props: Props) => {
   const engagementGrowth = totalDMs > 0 ? Math.round((totalDMs / (totalComments || 1)) * 100) : 0
 
   // Check if new user (no integration or no automations)
-  const isNewUser = !hasIntegration || (automations.length === 0 && !automationsLoading)
+  // ✅ CRITICAL: Wait for both queries to finish loading before determining if new user
+  const isStillLoading = (automationsLoading || automationsFetching) || (userLoading || userFetching)
+  const isNewUser = !isStillLoading && (!hasIntegration || (automations.length === 0 && !automationsLoading))
 
   // Get recent activity (last 5 automations with activity)
   const recentActivity = automations
@@ -53,6 +55,21 @@ const Page = (props: Props) => {
 
   // Get alerts (automations with errors or paused)
   const alerts = automations.filter((auto: any) => !auto.active && hasAutomations)
+
+  // Show loading state while data is being fetched
+  if (isStillLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">
+        <div className="animate-pulse space-y-4 w-full max-w-2xl">
+          <div className="h-8 bg-app-bg-tertiary rounded w-1/3 mx-auto"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="h-48 bg-app-card-bg rounded-2xl"></div>
+            <div className="h-48 bg-app-card-bg rounded-2xl"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (isNewUser) {
     return (
@@ -63,7 +80,7 @@ const Page = (props: Props) => {
               <Sparkles className="w-10 h-10 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white">Welcome to Mation!</h1>
+          <h1 className="text-3xl font-bold text-app-text-primary">Welcome to Mation!</h1>
           <p className="text-text-secondary text-lg">
             Get started by connecting your Instagram account and creating your first automation
           </p>
@@ -73,14 +90,14 @@ const Page = (props: Props) => {
           {/* Integration Card */}
           <Link 
             href={`${pathname}/integrations`}
-            className="group relative bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#333] rounded-2xl p-8 hover:border-blue-500/50 transition-all hover:shadow-lg hover:shadow-blue-500/10"
+            className="group relative bg-gradient-to-br from-app-card-bg to-app-bg-tertiary border border-app-border rounded-2xl p-8 hover:border-blue-500/50 transition-all hover:shadow-lg hover:shadow-blue-500/10"
           >
             <div className="flex flex-col gap-4">
               <div className="w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
                 <Instagram className="w-7 h-7 text-blue-400" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-white mb-2">Connect Instagram</h3>
+                <h3 className="text-xl font-semibold text-app-text-primary mb-2">Connect Instagram</h3>
                 <p className="text-text-secondary text-sm">
                   Link your Instagram account to start automating your engagement
                 </p>
@@ -93,13 +110,13 @@ const Page = (props: Props) => {
           </Link>
 
           {/* Automation Setup Card */}
-          <div className="group relative bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[#333] rounded-2xl p-8 hover:border-purple-500/50 transition-all hover:shadow-lg hover:shadow-purple-500/10">
+          <div className="group relative bg-gradient-to-br from-app-card-bg to-app-bg-tertiary border border-app-border rounded-2xl p-8 hover:border-purple-500/50 transition-all hover:shadow-lg hover:shadow-purple-500/10">
             <div className="flex flex-col gap-4">
               <div className="w-14 h-14 rounded-xl bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors">
                 <Zap className="w-7 h-7 text-purple-400" />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-white mb-2">Create Automation</h3>
+                <h3 className="text-xl font-semibold text-app-text-primary mb-2">Create Automation</h3>
                 <p className="text-text-secondary text-sm">
                   Set up your first automation to automatically respond to comments and DMs
                 </p>
@@ -158,7 +175,7 @@ const Page = (props: Props) => {
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-semibold text-white">Your Active Automations</h2>
+              <h2 className="text-2xl font-semibold text-app-text-primary">Your Active Automations</h2>
               <p className="text-text-secondary text-sm mt-1">
                 Manage and monitor your automation workflows
               </p>
@@ -170,16 +187,16 @@ const Page = (props: Props) => {
           {automationsLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6 animate-pulse">
-                  <div className="h-6 bg-[#333] rounded w-1/3 mb-4"></div>
-                  <div className="h-4 bg-[#333] rounded w-2/3"></div>
+                <div key={i} className="bg-app-card-bg border border-app-border rounded-xl p-6 animate-pulse">
+                  <div className="h-6 bg-app-bg-tertiary rounded w-1/3 mb-4"></div>
+                  <div className="h-4 bg-app-bg-tertiary rounded w-2/3"></div>
                 </div>
               ))}
             </div>
           ) : automations.length === 0 ? (
-            <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-12 text-center">
+            <div className="bg-app-card-bg border border-app-border rounded-xl p-12 text-center">
               <Zap className="w-12 h-12 text-text-secondary mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2">No Automations Yet</h3>
+              <h3 className="text-lg font-medium text-app-text-primary mb-2">No Automations Yet</h3>
               <p className="text-text-secondary mb-6">Create your first automation to get started</p>
               <CreateAutomation />
             </div>
@@ -199,10 +216,10 @@ const Page = (props: Props) => {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Recent Activity Feed */}
-          <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+          <div className="bg-app-card-bg border border-app-border rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="w-5 h-5 text-blue-400" />
-              <h3 className="text-lg font-semibold text-white">Recent Activity</h3>
+              <h3 className="text-lg font-semibold text-app-text-primary">Recent Activity</h3>
             </div>
             {recentActivity.length === 0 ? (
               <div className="text-center py-8">
@@ -220,17 +237,17 @@ const Page = (props: Props) => {
 
           {/* Alerts & Warnings */}
           {alerts.length > 0 && (
-            <div className="bg-[#1a1a1a] border border-yellow-500/30 rounded-xl p-6">
+            <div className="bg-app-card-bg border border-yellow-500/30 rounded-xl p-6">
               <div className="flex items-center gap-2 mb-4">
                 <AlertCircle className="w-5 h-5 text-yellow-400" />
-                <h3 className="text-lg font-semibold text-white">Alerts</h3>
+                <h3 className="text-lg font-semibold text-app-text-primary">Alerts</h3>
               </div>
               <div className="space-y-3">
                 {alerts.map((automation: any) => (
                   <div key={automation.id} className="flex items-start gap-3">
                     <AlertCircle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-sm text-white font-medium">{automation.name}</p>
+                      <p className="text-sm text-app-text-primary font-medium">{automation.name}</p>
                       <p className="text-xs text-text-secondary">Automation is paused</p>
                     </div>
                   </div>
@@ -240,10 +257,10 @@ const Page = (props: Props) => {
           )}
 
           {/* Connected Accounts */}
-          <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+          <div className="bg-app-card-bg border border-app-border rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <Instagram className="w-5 h-5 text-pink-400" />
-              <h3 className="text-lg font-semibold text-white">Connected Accounts</h3>
+              <h3 className="text-lg font-semibold text-app-text-primary">Connected Accounts</h3>
             </div>
             {integrations.length === 0 ? (
               <div className="text-center py-6">
@@ -255,7 +272,7 @@ const Page = (props: Props) => {
             ) : (
               <div className="space-y-3">
                 {integrations.map((integration: any) => (
-                  <div key={integration.id} className="flex items-center gap-3 p-3 bg-[#0a0a0a] rounded-lg">
+                  <div key={integration.id} className="flex items-center gap-3 p-3 bg-app-bg-tertiary rounded-lg">
                     {integration.instagramProfilePicture ? (
                       <Image
                         src={integration.instagramProfilePicture}
@@ -271,7 +288,7 @@ const Page = (props: Props) => {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">
+                      <p className="text-sm font-medium text-app-text-primary truncate">
                         @{integration.instagramUsername || 'Instagram'}
                       </p>
                       <div className="flex items-center gap-1 mt-0.5">
@@ -291,10 +308,10 @@ const Page = (props: Props) => {
           </div>
 
           {/* System Health */}
-          <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+          <div className="bg-app-card-bg border border-app-border rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <CheckCircle2 className="w-5 h-5 text-green-400" />
-              <h3 className="text-lg font-semibold text-white">System Health</h3>
+              <h3 className="text-lg font-semibold text-app-text-primary">System Health</h3>
             </div>
             <div className="space-y-3">
               <HealthItem label="Webhooks" status="active" />
@@ -333,7 +350,7 @@ const StatCard = ({
   }
 
   return (
-    <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6 hover:border-[#444] transition-colors">
+    <div className="bg-app-card-bg border border-app-border rounded-xl p-6 hover:border-app-border-secondary transition-colors">
       <div className="flex items-start justify-between mb-4">
         <div className={cn('w-12 h-12 rounded-lg flex items-center justify-center border', colorClasses[color])}>
           <Icon className="w-6 h-6" />
@@ -346,7 +363,7 @@ const StatCard = ({
         )}
       </div>
       <div>
-        <p className="text-3xl font-bold text-white mb-1">{value}</p>
+        <p className="text-3xl font-bold text-app-text-primary mb-1">{value}</p>
         <p className="text-sm text-text-secondary">{label}</p>
         {trendUp === null && <p className="text-xs text-text-secondary mt-1">{trend}</p>}
       </div>
@@ -365,12 +382,12 @@ const AutomationCard = ({ automation, pathname }: { automation: any; pathname: s
   return (
     <Link
       href={`${pathname}/automations/${automation.id}`}
-      className="block bg-[#1a1a1a] border border-[#333] rounded-xl p-6 hover:border-blue-500/50 transition-all group"
+      className="block bg-app-card-bg border border-app-border rounded-xl p-6 hover:border-blue-500/50 transition-all group"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <h3 className="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors">
+            <h3 className="text-lg font-semibold text-app-text-primary group-hover:text-blue-400 transition-colors">
               {automation.name}
             </h3>
             {automation.active ? (
@@ -405,14 +422,14 @@ const AutomationCard = ({ automation, pathname }: { automation: any; pathname: s
             </span>
           ))}
           {keywords.length > 3 && (
-            <span className="px-3 py-1 rounded-full bg-[#333] text-text-secondary text-xs">
+            <span className="px-3 py-1 rounded-full bg-app-bg-tertiary text-text-secondary text-xs">
               +{keywords.length - 3} more
             </span>
           )}
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-4 border-t border-[#333]">
+      <div className="flex items-center justify-between pt-4 border-t border-app-border">
         <div className="flex items-center gap-4 text-sm text-text-secondary">
           <div className="flex items-center gap-1.5">
             <MessageSquare className="w-4 h-4" />
@@ -443,7 +460,7 @@ const ActivityItem = ({ automation }: { automation: any }) => {
         <MessageSquare className="w-4 h-4 text-blue-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-white font-medium truncate">{automation.name}</p>
+        <p className="text-sm text-app-text-primary font-medium truncate">{automation.name}</p>
         <p className="text-xs text-text-secondary">
           {dmCount} DMs sent • {commentCount} comments processed
         </p>

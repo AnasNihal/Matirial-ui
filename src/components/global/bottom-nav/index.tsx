@@ -64,7 +64,7 @@ const BottomNav = ({ slug }: Props) => {
   ]
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0e0e0e] border-t border-[#333336]">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-app-bg-primary border-t border-app-border">
       <div className="flex items-center justify-around px-2 py-2">
         {mainNavItems.map((item) => {
           const active = isActive(item.label)
@@ -76,16 +76,16 @@ const BottomNav = ({ slug }: Props) => {
               className={cn(
                 'flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors min-w-[60px] flex-1',
                 active
-                  ? 'text-[#768BDD]'
-                  : 'text-[#9B9CA0]'
+                  ? 'text-app-blue'
+                  : 'text-text-secondary'
               )}
             >
-              <div className={cn('flex items-center justify-center', active && 'text-[#768BDD]')}>
+              <div className={cn('flex items-center justify-center', active && 'text-app-blue')}>
                 <IconComponent />
               </div>
               <span className={cn(
                 'text-[10px] font-medium capitalize',
-                active ? 'text-[#768BDD]' : 'text-[#9B9CA0]'
+                active ? 'text-app-blue' : 'text-text-secondary'
               )}>
                 {item.label}
               </span>
@@ -100,16 +100,16 @@ const BottomNav = ({ slug }: Props) => {
               className={cn(
                 'flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg transition-colors min-w-[60px] flex-1',
                 isMoreOpen
-                  ? 'text-[#768BDD]'
-                  : 'text-[#9B9CA0]'
+                  ? 'text-app-blue'
+                  : 'text-text-secondary'
               )}
             >
-              <div className={cn('flex items-center justify-center', isMoreOpen && 'text-[#768BDD]')}>
+              <div className={cn('flex items-center justify-center', isMoreOpen && 'text-app-blue')}>
                 <Grid />
               </div>
               <span className={cn(
                 'text-[10px] font-medium',
-                isMoreOpen ? 'text-[#768BDD]' : 'text-[#9B9CA0]'
+                isMoreOpen ? 'text-app-blue' : 'text-text-secondary'
               )}>
                 More
               </span>
@@ -117,11 +117,11 @@ const BottomNav = ({ slug }: Props) => {
           </SheetTrigger>
           <SheetContent
             side="right"
-            className="w-[280px] bg-[#0e0e0e] border-[#333336] p-0"
+            className="w-[280px] bg-app-bg-primary border-app-border p-0"
           >
             <div className="flex flex-col h-full">
-              <div className="p-4 border-b border-[#333336]">
-                <h2 className="text-lg font-semibold text-white">More</h2>
+              <div className="p-4 border-b border-app-border">
+                <h2 className="text-lg font-semibold text-app-text-primary">More</h2>
               </div>
 
               <div className="flex-1 overflow-y-auto p-2">
@@ -137,11 +137,11 @@ const BottomNav = ({ slug }: Props) => {
                         className={cn(
                           'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
                           active
-                            ? 'bg-[#0f0f0f] text-[#768BDD]'
-                            : 'text-[#9B9CA0] hover:bg-[#0f0f0f] hover:text-white'
+                            ? 'bg-app-bg-secondary text-app-blue'
+                            : 'text-text-secondary hover:bg-app-bg-secondary hover:text-app-text-primary'
                         )}
                       >
-                        <div className={cn('flex items-center justify-center', active && 'text-[#768BDD]')}>
+                        <div className={cn('flex items-center justify-center', active && 'text-app-blue')}>
                           <IconComponent />
                         </div>
                         <span className="text-sm font-medium capitalize">
@@ -152,8 +152,8 @@ const BottomNav = ({ slug }: Props) => {
                   })}
 
                   {/* Profile */}
-                  <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-[#9B9CA0] hover:bg-[#0f0f0f] hover:text-white transition-colors">
-                    <User size={20} className="text-[#9B9CA0]" />
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-app-bg-secondary hover:text-app-text-primary transition-colors">
+                    <User size={20} className="text-text-secondary" />
                     <div className="flex-1">
                       <ClerkAuthState />
                     </div>
@@ -163,7 +163,7 @@ const BottomNav = ({ slug }: Props) => {
                   <Link
                     href="#"
                     onClick={() => setIsMoreOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-[#9B9CA0] hover:bg-[#0f0f0f] hover:text-white transition-colors"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-secondary hover:bg-app-bg-secondary hover:text-app-text-primary transition-colors"
                   >
                     <HelpDuoToneWhite />
                     <span className="text-sm font-medium">Help</span>

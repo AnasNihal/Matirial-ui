@@ -49,10 +49,10 @@
         <Button
           disabled={isPending}
           onClick={onActivate}
-          className="lg:px-10 bg-gradient-to-br hover:opacity-80 text-white rounded-full from-[#3352CC] font-medium to-[#1C2D70] ml-4"
+          className="lg:px-6 bg-gradient-to-br hover:opacity-90 text-white rounded-full from-[#22C55E] font-medium to-[#16A34A] shadow-sm"
         >
-          {isPending ? <Loader2 className="animate-spin mr-2" /> : <ActiveAutomation />}
-          <p className="lg:inline hidden">Activate</p>
+          {isPending ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ActiveAutomation />}
+          <p className="lg:inline hidden ml-2">Go Live</p>
         </Button>
       )
     }

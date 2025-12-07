@@ -25,26 +25,26 @@ export function useAggressivePrefetch() {
             queryKey: ['user-profile'],
             queryFn: onUserInfo,
             staleTime: Infinity,
-          }),
+          }).catch(() => {}), // Silent fail - prefetching is non-critical
           
           // Prefetch automations list
           queryClient.prefetchQuery({
             queryKey: ['user-automations'],
             queryFn: getAllAutomations,
             staleTime: Infinity,
-          }),
+          }).catch(() => {}), // Silent fail - prefetching is non-critical
           
           // Prefetch Instagram posts
           queryClient.prefetchQuery({
             queryKey: ['instagram-media'],
             queryFn: getProfilePosts,
             staleTime: Infinity,
-          }),
+          }).catch(() => {}), // Silent fail - prefetching is non-critical
         ])
         
         console.log('🚀 All data prefetched successfully!')
       } catch (error) {
-        console.log('Prefetch error (non-critical):', error)
+        // Silent fail - prefetching is non-critical
       }
     }
 
@@ -72,7 +72,7 @@ export function usePrefetchAllAutomations(automationIds: string[]) {
             queryKey: ['automation-info', id],
             queryFn: () => getAutomationInfo(id),
             staleTime: Infinity,
-          })
+          }).catch(() => {}) // Silent fail - prefetching is non-critical
         )
       )
       

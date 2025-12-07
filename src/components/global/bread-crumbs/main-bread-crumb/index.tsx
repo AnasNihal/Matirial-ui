@@ -18,7 +18,7 @@ const MainBreadCrumb = ({ page, slug }: Props) => {
         </span>
         <Button 
           variant="ghost" 
-          className="text-text-secondary hover:text-white hover:bg-[#1a1a1a]"
+          className="text-text-secondary hover:text-app-text-primary hover:bg-app-bg-secondary"
         >
           <HelpCircle className="w-5 h-5 mr-2" />
           Support

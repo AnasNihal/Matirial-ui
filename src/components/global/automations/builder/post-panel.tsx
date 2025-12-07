@@ -85,8 +85,8 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
   return (
     <div
       className={`rounded-xl border ${
-        isActive ? 'border-blue-500' : 'border-[#2a2a2a]'
-      } bg-[#101010] p-4`}
+        isActive ? 'border-blue-500' : 'border-app-border'
+      } bg-app-card-bg p-4`}
       onClick={onFocus}
     >
       <div className="flex items-center justify-between mb-3">
@@ -168,17 +168,17 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
                 />
                 {/* Media type indicators */}
                 {isReel(post) && (
-                  <div className="absolute bottom-1 left-1 bg-black/70 rounded px-1.5 py-0.5 flex items-center gap-1 z-10">
-                    <Play className="h-3 w-3 text-white fill-white" />
+                  <div className="absolute bottom-1 left-1 bg-app-text-primary/70 dark:bg-black/70 rounded px-1.5 py-0.5 flex items-center gap-1 z-10">
+                    <Play className="h-3 w-3 text-app-bg-primary dark:text-white fill-app-bg-primary dark:fill-white" />
                   </div>
                 )}
                 {isCarousel(post) && (
-                  <div className="absolute bottom-1 left-1 bg-black/60 rounded px-1.5 py-0.5">
-                    <div className="w-3 h-3 border border-white rounded-sm" />
+                  <div className="absolute bottom-1 left-1 bg-app-text-primary/60 dark:bg-black/60 rounded px-1.5 py-0.5">
+                    <div className="w-3 h-3 border border-app-bg-primary dark:border-white rounded-sm" />
                   </div>
                 )}
                 {selectedPost?.id === post.id && (
-                  <div className="absolute top-1 right-1 bg-blue-500 rounded-full p-0.5">
+                  <div className="absolute top-1 right-1 bg-app-blue rounded-full p-0.5">
                     <Check className="h-3 w-3 text-white" />
                   </div>
                 )}
@@ -191,7 +191,7 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
             <button
               type="button"
               onClick={handleOpenModal}
-              className="w-full mt-3 py-2 text-xs text-text-secondary hover:text-white border border-[#333] rounded-lg transition-colors"
+              className="w-full mt-3 py-2 text-xs text-text-secondary hover:text-app-text-primary border border-app-border rounded-lg transition-colors"
             >
               See More ({igData.length - 3} more)
             </button>
@@ -201,15 +201,15 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
 
       {/* Modal for selecting post/reel */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="bg-white rounded-3xl p-6 max-w-2xl max-h-[85vh] overflow-hidden flex flex-col border-0 shadow-2xl">
+        <DialogContent className="bg-app-card-bg rounded-3xl p-6 max-w-2xl max-h-[85vh] overflow-hidden flex flex-col border border-app-border shadow-2xl">
           <DialogHeader className="flex-shrink-0 pb-0">
             <div className="flex items-center justify-between">
-              <DialogTitle className="text-lg font-semibold text-gray-900">
+              <DialogTitle className="text-lg font-semibold text-app-text-primary">
                 Select Post or Reel
               </DialogTitle>
               <button
                 onClick={handleCloseModal}
-                className="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 hover:bg-gray-100"
+                className="text-text-secondary hover:text-app-text-primary transition-colors rounded-lg p-1 hover:bg-app-bg-secondary"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -222,7 +222,7 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
               {/* Create New Post/Reel option */}
               <button
                 type="button"
-                className="relative aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500 to-purple-700 border-2 border-gray-200 hover:border-gray-300 transition-all flex flex-col items-center justify-center group"
+                className="relative aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500 to-purple-700 border-2 border-app-border hover:border-app-border-secondary transition-all flex flex-col items-center justify-center group"
               >
                 <Zap className="h-6 w-6 text-white mb-1 group-hover:scale-110 transition-transform" />
                 <span className="text-white text-xs font-medium text-center px-2">Next Post or Reel</span>
@@ -260,7 +260,7 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
                       setTempSelectedPost(postData)
                     }}
                     className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                      isSelected ? 'border-purple-500 ring-2 ring-purple-200' : 'border-gray-200 hover:border-gray-300'
+                      isSelected ? 'border-purple-500 ring-2 ring-purple-200' : 'border-app-border hover:border-app-border-secondary'
                     }`}
                   >
                     <Image
@@ -272,19 +272,19 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
                     />
                     {/* Selection checkmark */}
                     {isSelected && (
-                      <div className="absolute top-1 right-1 bg-purple-500 rounded-full p-1 z-10 shadow-lg">
+                      <div className="absolute top-1 right-1 bg-app-blue rounded-full p-1 z-10 shadow-lg">
                         <Check className="h-3 w-3 text-white" />
                       </div>
                     )}
                     {/* Media type indicators */}
                     {isReel(post) && (
-                      <div className="absolute bottom-1 left-1 bg-black/70 rounded px-1.5 py-0.5 flex items-center gap-1 z-10">
-                        <Play className="h-3 w-3 text-white fill-white" />
+                      <div className="absolute bottom-1 left-1 bg-app-text-primary/70 dark:bg-black/70 rounded px-1.5 py-0.5 flex items-center gap-1 z-10">
+                        <Play className="h-3 w-3 text-app-bg-primary dark:text-white fill-app-bg-primary dark:fill-white" />
                       </div>
                     )}
                     {isCarousel(post) && (
-                      <div className="absolute bottom-1 left-1 bg-black/70 rounded px-1.5 py-0.5 z-10">
-                        <div className="w-3 h-3 border border-white rounded-sm" />
+                      <div className="absolute bottom-1 left-1 bg-app-text-primary/70 dark:bg-black/70 rounded px-1.5 py-0.5 z-10">
+                        <div className="w-3 h-3 border border-app-bg-primary dark:border-white rounded-sm" />
                       </div>
                     )}
                   </button>
@@ -294,11 +294,11 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
           </div>
 
           {/* Confirm button */}
-          <div className="flex-shrink-0 mt-4 pt-4 border-t border-gray-200">
+          <div className="flex-shrink-0 mt-4 pt-4 border-t border-app-border">
             <Button
               onClick={handleConfirmSelection}
               disabled={!tempSelectedPost}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 text-white rounded-lg h-10 font-medium"
+              className="w-full bg-app-blue hover:bg-app-blue-dark disabled:bg-app-bg-tertiary disabled:text-text-secondary text-white rounded-lg h-10 font-medium"
             >
               Confirm
             </Button>

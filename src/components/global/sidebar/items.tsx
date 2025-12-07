@@ -15,10 +15,10 @@ const Items = ({ page, slug }: Props) => {
       href={`/dashboard/${slug}/${item.label === 'home' ? '/' : item.label}`}
       className={cn(
         'capitalize flex gap-x-2 rounded-full p-3',
-        page === item.label && 'bg-[#0f0f0f]',
+        page === item.label && 'bg-[var(--app-bg-secondary)]',
         page === slug && item.label === 'home'
-          ? 'bg-[#0f0f0f]'
-          : 'text-[#9B9CA0]'
+          ? 'bg-[var(--app-bg-secondary)]'
+          : 'text-[var(--app-text-secondary)]'
       )}
     >
       {item.icon}

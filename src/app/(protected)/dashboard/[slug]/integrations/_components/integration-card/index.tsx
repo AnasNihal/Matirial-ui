@@ -46,13 +46,13 @@ const IntegrationCard = ({ description, icon, strategy, title }: Props) => {
   if (isLoading && !data) {
     console.log('🔍 [IntegrationCard] Loading - showing skeleton')
     return (
-      <div className="border-2 border-[#3352CC] rounded-2xl gap-x-5 p-5 flex items-center justify-between animate-pulse">
-        <div className="w-12 h-12 bg-gray-700 rounded" />
+      <div className="border-2 border-app-blue rounded-2xl gap-x-5 p-5 flex items-center justify-between animate-pulse">
+        <div className="w-12 h-12 bg-app-bg-tertiary rounded" />
         <div className="flex flex-col flex-1 gap-2">
-          <div className="h-6 bg-gray-700 rounded w-32" />
-          <div className="h-4 bg-gray-700 rounded w-48" />
+          <div className="h-6 bg-app-bg-tertiary rounded w-32" />
+          <div className="h-4 bg-app-bg-tertiary rounded w-48" />
         </div>
-        <div className="h-10 bg-gray-700 rounded-full w-24" />
+        <div className="h-10 bg-app-bg-tertiary rounded-full w-24" />
       </div>
     )
   }
@@ -78,11 +78,11 @@ const IntegrationCard = ({ description, icon, strategy, title }: Props) => {
   }
 
   return (
-    <div className="border-2 border-[#3352CC] rounded-2xl gap-x-5 p-5 flex items-center justify-between">
+    <div className="border-2 border-app-blue rounded-2xl gap-x-5 p-5 flex items-center justify-between">
       {icon}
       <div className="flex flex-col flex-1">
-        <h3 className="text-xl"> {title}</h3>
-        <p className="text-[#9D9D9D] text-base ">{description}</p>
+        <h3 className="text-xl text-app-text-primary"> {title}</h3>
+        <p className="text-text-secondary text-base ">{description}</p>
       </div>
       <Button
         onClick={onInstaOAuth}

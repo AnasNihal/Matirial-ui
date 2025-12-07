@@ -90,58 +90,59 @@ export default function PhonePreview({
         className="
           relative overflow-hidden
           rounded-[54px]
-          border-[6px] border-[#1a1a1a]
-          shadow-[0_0_28px_rgba(0,0,0,0.95)]
+          border-[8px]
+          dark:border-[#1a1a1a]
+          border-[#2a2a2a]
+          shadow-2xl
         "
         style={{
-          width: 360,
-          height: 760,
+          width: 280,
+          height: 590,
           background: '#000',
-          boxShadow:
-            '0 0 28px rgba(0,0,0,0.95), inset 0 0 4px rgba(255,255,255,0.06)',
+          boxShadow: 'var(--phone-shadow), 0 0 0 1px rgba(0,0,0,0.1)',
         }}
       >
         {/* TOP NAV */}
-        <div className="pt-4 pb-2 px-4">
+        <div className="pt-3 pb-1.5 px-3">
           <div className="flex items-center justify-center relative">
-            <div className="text-[13px] tracking-wide text-white/90 font-semibold">
+            <div className="text-[12px] tracking-wide text-white/90 font-semibold">
               POSTS
             </div>
 
             {/* REMOVE THREE DOT ICON */}
             <button className="absolute left-0 text-white/80">
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} />
             </button>
           </div>
         </div>
 
         {/* USER BAR */}
         <div
-          className="px-4 py-3 border-b"
+          className="px-3 py-2 border-b"
           style={{ borderColor: 'rgba(255,255,255,0.07)' }}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {profilePic ? (
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-700">
+                <div className="w-7 h-7 rounded-full overflow-hidden bg-gray-700">
                   <Image
                     src={profilePic}
-                    width={32}
-                    height={32}
+                    width={28}
+                    height={28}
                     alt="profile"
                     className="object-cover"
                     unoptimized
                   />
                 </div>
               ) : (
-                <AvatarFallback name={username ?? 'I'} size={32} />
+                <AvatarFallback name={username ?? 'I'} size={28} />
               )}
 
               <div className="flex flex-col leading-tight">
-                <div className="text-[13.5px] text-white font-semibold">
+                <div className="text-[12px] text-white font-semibold">
                   {username}
                 </div>
-                <div className="text-[11px] text-white/60">Original audio</div>
+                <div className="text-[10px] text-white/60">Original audio</div>
               </div>
             </div>
 
@@ -152,7 +153,7 @@ export default function PhonePreview({
         {/* POST AREA */}
         <div
           className="relative bg-black flex items-center justify-center"
-          style={{ height: 390 }}
+          style={{ height: 300 }}
         >
           {hasPost ? (
             <Image
@@ -178,24 +179,24 @@ export default function PhonePreview({
         {/* ACTIONS & CAPTION */}
         <div className="px-4 pt-3">
           <div className="flex items-center justify-between text-white">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button>
-                <Heart size={22} className="text-white/90" />
+                <Heart size={20} className="text-white/90" />
               </button>
               <button>
-                <MessageCircle size={22} className="text-white/90" />
+                <MessageCircle size={20} className="text-white/90" />
               </button>
               <button>
-                <Send size={22} className="text-white/90" />
+                <Send size={20} className="text-white/90" />
               </button>
             </div>
 
             <button>
-              <Bookmark size={22} className="text-white/90" />
+              <Bookmark size={20} className="text-white/90" />
             </button>
           </div>
 
-          <div className="mt-3 text-[13px] text-white/80">
+          <div className="mt-2 text-[12px] text-white/80">
             {hasPost && selectedPost?.caption ? (
               <>
                 <span className="font-semibold mr-2">{username}</span>
@@ -215,39 +216,39 @@ export default function PhonePreview({
         <div
           className="
             absolute bottom-0 left-0 right-0
-            px-6 py-4
+            px-4 py-3
             border-t border-white/10
             backdrop-blur-[2px]
           "
           style={{ pointerEvents: 'none' }}
         >
           <div className="flex justify-between items-center mb-1">
-            <Home size={22} className="text-white" />
-            <Search size={22} className="text-white" />
+            <Home size={20} className="text-white" />
+            <Search size={20} className="text-white" />
 
-            <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-sm">
-              <Plus size={20} className="text-white" />
+            <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center backdrop-blur-sm">
+              <Plus size={18} className="text-white" />
             </div>
 
-            <Video size={22} className="text-white" />
+            <Video size={20} className="text-white" />
 
             {profilePic ? (
-              <div className="w-6 h-6 rounded-full overflow-hidden border border-white/20">
+              <div className="w-5 h-5 rounded-full overflow-hidden border border-white/20">
                 <Image
                   src={profilePic}
-                  width={24}
-                  height={24}
+                  width={20}
+                  height={20}
                   alt="profile"
                   className="object-cover"
                   unoptimized
                 />
               </div>
             ) : (
-              <AvatarFallback name={username ?? 'I'} size={24} />
+              <AvatarFallback name={username ?? 'I'} size={20} />
             )}
           </div>
 
-          <div className="absolute bottom-1 left-1/2 w-28 h-1 -translate-x-1/2 rounded-full bg-white/25" />
+          <div className="absolute bottom-1 left-1/2 w-24 h-1 -translate-x-1/2 rounded-full bg-white/25" />
         </div>
 
         {/* COMMENT SHEET */}
@@ -258,22 +259,22 @@ export default function PhonePreview({
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 400, opacity: 0 }}
               transition={{ duration: 0.28 }}
-              className="absolute left-3 right-3 bottom-3 bg-[#1f1f1f] rounded-2xl border border-white/6 z-30"
+              className="absolute left-3 right-3 bottom-3 dark:bg-[#1f1f1f] bg-[#1f1f1f] rounded-2xl border dark:border-white/6 border-white/10 z-30"
             >
               <div className="px-4 pt-3 pb-2 flex items-center justify-center">
-                <div className="w-12 h-1 rounded-full bg-white/40" />
+                <div className="w-12 h-1 rounded-full dark:bg-white/40 bg-white/30" />
               </div>
 
               <div className="px-4 pb-4 text-white">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-center text-sm font-semibold">Comments</div>
+                  <div className="text-center text-sm font-semibold text-white">Comments</div>
                   <button className="text-white/60">
                     <Send size={16} />
                   </button>
                 </div>
 
                 <div className="flex gap-3 mb-3 items-start">
-                  <div className="w-8 h-8 rounded-full bg-white/7 flex items-center justify-center text-xs text-white">
+                  <div className="w-8 h-8 rounded-full dark:bg-white/7 bg-white/10 flex items-center justify-center text-xs text-white">
                     U
                   </div>
 
@@ -302,7 +303,7 @@ export default function PhonePreview({
                         unoptimized
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-white/6 flex items-center justify-center text-xs text-white">
+                      <div className="w-8 h-8 rounded-full dark:bg-white/6 bg-white/10 flex items-center justify-center text-xs text-white">
                         C
                       </div>
                     )}
@@ -334,62 +335,47 @@ export default function PhonePreview({
               className="absolute inset-0 z-40"
             >
               <div className="absolute inset-0 bg-black flex flex-col">
-                <div className="flex items-center justify-between p-4 border-b border-white/10">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/10">
+                  <div className="flex items-center gap-2.5">
                     <button className="text-white">
-                      <ArrowLeft size={20} />
+                      <ArrowLeft size={18} />
                     </button>
 
                     {profilePic ? (
-                      <div className="w-8 h-8 rounded-full overflow-hidden">
-                        <Image src={profilePic} width={32} height={32} alt="p" unoptimized />
+                      <div className="w-7 h-7 rounded-full overflow-hidden">
+                        <Image src={profilePic} width={28} height={28} alt="p" unoptimized />
                       </div>
                     ) : (
-                      <AvatarFallback name={username} size={32} />
+                      <AvatarFallback name={username} size={28} />
                     )}
 
                     <div>
-                      <div className="text-sm text-white font-semibold">{username}</div>
-                      <div className="text-xs text-white/60">Active now</div>
+                      <div className="text-[13px] text-white font-semibold leading-tight">{username}</div>
+                      <div className="text-[11px] text-white/60 leading-tight">Active now</div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 text-white/70">
+                  <div className="flex items-center gap-2.5 text-white/70">
                     <button>
-                      <Phone size={20} />
+                      <Phone size={18} />
                     </button>
                     <button>
-                      <Info size={20} />
+                      <Info size={18} />
                     </button>
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-auto p-4">
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      {profilePic ? (
-                        <div className="w-6 h-6 rounded-full overflow-hidden opacity-60">
-                          <Image src={profilePic} width={24} height={24} alt="p" unoptimized />
-                        </div>
-                      ) : (
-                        <AvatarFallback name={username} size={24} />
-                      )}
-                      <div className="text-xs text-white/60">{username}</div>
-                    </div>
-
-                    <div className="text-white/60 text-xs mb-3">
-                      This is a preview of the DM thread
-                    </div>
-
-                    <div className="self-start bg-white/6 text-white p-3 rounded-2xl max-w-[75%]">
-                      <p className="text-sm leading-relaxed whitespace-pre-line">
+                <div className="flex-1 overflow-auto px-3 py-3">
+                  <div className="flex flex-col gap-2.5">
+                    <div className="self-start bg-white/6 text-white px-3 py-2 rounded-2xl max-w-[75%]">
+                      <p className="text-[13px] leading-relaxed whitespace-pre-line">
                         Hey! Thanks for reaching{'\n'}out — this DM preview{'\n'}appears here.
                       </p>
                     </div>
 
                     {dmText && (
-                      <div className="self-start bg-white/6 text-white p-3 rounded-2xl max-w-[75%]">
-                        <p className="text-sm leading-relaxed whitespace-pre-line">{dmText}</p>
+                      <div className="self-start bg-white/6 text-white px-3 py-2 rounded-2xl max-w-[75%]">
+                        <p className="text-[13px] leading-relaxed whitespace-pre-line">{dmText}</p>
                       </div>
                     )}
 
@@ -439,30 +425,45 @@ export default function PhonePreview({
                   </div>
                 </div>
 
-                <div className="p-4 border-t border-white/10 bg-black">
-                  <div className="bg-white/6 rounded-full px-3 py-2.5 flex items-center gap-3">
-                    <button className="text-white/70">
-                      <Plus size={20} />
+                <div className="px-3 py-2.5 border-t border-white/10 bg-black">
+                  <div className="bg-white/6 rounded-full px-2.5 py-2 flex items-center gap-2.5">
+                    <button className="text-white/70 flex-shrink-0">
+                      <Plus size={18} />
                     </button>
 
                     <input
-                      className="bg-transparent outline-none text-white placeholder:text-white/50 flex-1 text-sm"
+                      className="bg-transparent outline-none text-white placeholder:text-white/50 flex-1 text-[13px]"
                       placeholder="Message..."
                       readOnly
                     />
 
-                    <button className="text-white/70">
-                      <Music size={20} />
-                    </button>
-
-                    <button className="text-white/70">
+                    <button className="text-white/70 flex-shrink-0">
                       <svg
-                        width="20"
-                        height="20"
+                        width="18"
+                        height="18"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <polyline points="21 15 16 10 5 21" />
+                      </svg>
+                    </button>
+
+                    <button className="text-white/70 flex-shrink-0">
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       >
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
                         <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
