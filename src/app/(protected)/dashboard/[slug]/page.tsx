@@ -45,9 +45,12 @@ const Page = (props: Props) => {
   const engagementGrowth = totalDMs > 0 ? Math.round((totalDMs / (totalComments || 1)) * 100) : 0
 
   // Check if new user (no integration or no automations)
-  // ✅ CRITICAL: Wait for both queries to finish loading before determining if new user
-  const isStillLoading = (automationsLoading || automationsFetching) || (userLoading || userFetching)
-  const isNewUser = !isStillLoading && (!hasIntegration || (automations.length === 0 && !automationsLoading))
+  // ✅ OPTIMIZED: Show cached data immediately, only wait for true initial load
+  // Show loading ONLY if no cached data exists AND actually loading
+  const hasCachedAutomations = !!automationsData?.data
+  const hasCachedUser = !!userData?.data
+  const isStillLoading = (!hasCachedAutomations && automationsLoading) || (!hasCachedUser && userLoading)
+  const isNewUser = !isStillLoading && (!hasIntegration || (automations.length === 0 && hasCachedAutomations))
 
   // Get recent activity (last 5 automations with activity)
   const recentActivity = automations
@@ -57,7 +60,8 @@ const Page = (props: Props) => {
   // Get alerts (automations with errors or paused)
   const alerts = automations.filter((auto: any) => !auto.active && hasAutomations)
 
-  // Show loading state while data is being fetched
+  // ✅ Show loading state ONLY if no cached data AND actually loading
+  // This allows cached data to show immediately while fresh data loads in background
   if (isStillLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">

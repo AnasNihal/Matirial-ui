@@ -69,12 +69,14 @@ export const useQueryAutomations = () => {
     },
     staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes
     gcTime: Infinity, // 🔥 NEVER garbage collect
-    refetchOnMount: true, // ✅ CRITICAL: Fetch on mount if no cache exists
+    refetchOnMount: 'always', // ✅ Always refetch, but show cached data immediately
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     retry: 1, // ✅ Retry once on failure
     // 🔥 Show cached data instantly while fetching in background
     placeholderData: (previousData) => previousData,
+    // ✅ Don't block UI - show cached data immediately, refetch in background
+    networkMode: 'offlineFirst',
   })
 }
 
