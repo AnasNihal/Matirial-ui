@@ -23,7 +23,9 @@ export default function AutomationBuilder({ id }: Props) {
   // ✅ This will throw if QueryClientProvider is not set up
   // Error will be caught by ErrorLogger and logged to terminal
   const { data, refetch, isLoading } = useQueryAutomation(id)
+  // ✅ LAZY LOAD: Posts query - non-blocking, uses cache first
   const { data: postsData } = useQueryAutomationPosts() // Get Instagram posts to find thumbnail for reels
+  // ✅ LAZY LOAD: User query - non-blocking, uses cache first
   const { data: userData, refetch: refetchUser } = useQueryUser()
   
   // ✅ Check if no integration exists (show modal when posts fetch detects no integration)
@@ -429,8 +431,16 @@ async function handleActivate() {
     setHasChanges(false)
   }
 
-  // 🚀 ONLY show skeleton on TRUE first load (no cached data)
-  if (!data?.data) {
+  // 🚀 Show skeleton ONLY if no data AND actually loading (not just stale cache)
+  // ✅ Show page immediately if we have cached data, even if refetching in background
+  const hasData = data && data.data
+  if (isLoading && !hasData) {
+    return <AutomationBuilderSkeleton />
+  }
+  
+  // ✅ If we have data (even from cache), show the page immediately
+  // Posts and user data will load in background and update when ready
+  if (!hasData) {
     return <AutomationBuilderSkeleton />
   }
 
@@ -465,7 +475,7 @@ async function handleActivate() {
                 />
               ) : (
                 <p className="text-base truncate text-app-text-primary">
-                  {latestVariable?.variables ? latestVariable.variables.name : data.data.name}
+                  {latestVariable?.variables ? latestVariable.variables.name : (data?.data?.name || 'Untitled')}
                 </p>
               )}
 

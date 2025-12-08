@@ -99,11 +99,13 @@ export const useQueryAutomation = (id: string) => {
     staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes
     gcTime: Infinity, // 🔥 KEEP FOREVER
     enabled: !!id,
-    refetchOnMount: true, // ✅ CRITICAL: Fetch on mount if no cache exists
+    refetchOnMount: 'always', // ✅ Always refetch, but show cached data immediately
     refetchOnWindowFocus: false,
     retry: 1, // ✅ Retry once on failure
     // 🔥 Show cached data instantly while fetching in background
     placeholderData: (previousData) => previousData,
+    // ✅ Don't block UI - show cached data immediately, refetch in background
+    networkMode: 'offlineFirst',
   })
 }
 
@@ -145,15 +147,17 @@ export const useQueryUser = () => {
     },
     staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes
     gcTime: Infinity,
-    refetchOnMount: true, // ✅ CRITICAL: Fetch on mount if no cache exists
+    refetchOnMount: 'always', // ✅ Always refetch, but show cached data immediately
     refetchOnWindowFocus: false,
     retry: 1, // ✅ Retry once on failure
     // 🔥 Show cached data instantly while fetching in background
     placeholderData: (previousData) => previousData,
+    // ✅ Don't block UI - show cached data immediately, refetch in background
+    networkMode: 'offlineFirst',
   })
 }
 
-// 🚀 INSTANT LOAD: Instagram posts cached aggressively
+// 🚀 INSTANT LOAD: Instagram posts cached aggressively - LAZY LOAD (non-blocking)
 export const useQueryAutomationPosts = () => {
   return useQuery({
     queryKey: ['instagram-media'],
@@ -174,11 +178,13 @@ export const useQueryAutomationPosts = () => {
     },
     staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes (not Infinity - posts can change)
     gcTime: Infinity, // 🔥 KEEP FOREVER
-    refetchOnMount: true, // ✅ Fetch on mount if no cache (was false - this was the bug!)
+    refetchOnMount: false, // ✅ Use cached data first, don't block page load
     refetchOnWindowFocus: false,
     retry: 1, // ✅ Retry once on failure
     // 🔥 Show cached data instantly while fetching in background
     placeholderData: (previousData) => previousData,
+    // ✅ Don't block page load - fetch in background if cache exists
+    networkMode: 'offlineFirst', // Use cache first, then network
   })
 }
 
