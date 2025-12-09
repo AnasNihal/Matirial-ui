@@ -1,0 +1,136 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "Next.js 14.2.7",
+    "React 18",
+    "Prisma",
+    "PostgreSQL",
+    "Clerk",
+    "Stripe",
+    "OpenAI GPT-4o",
+    "Instagram Graph API",
+    "Tailwind CSS",
+    "Shadcn/ui",
+    "React Query",
+    "Redux Toolkit",
+    "Axios"
+  ],
+  "features": [
+    {
+      "name": "User Authentication",
+      "description": "Clerk-based authentication with sign-in, sign-up, and session management",
+      "files": [
+        "src/app/(auth)/sign-in/[[...sign-in]]/page.tsx",
+        "src/app/(auth)/sign-up/[[...sign-up]]/page.tsx",
+        "src/app/layout.tsx",
+        "src/middleware.ts",
+        "src/actions/user/index.ts",
+        "src/actions/user/queries.ts"
+      ]
+    },
+    {
+      "name": "Instagram Integration",
+      "description": "OAuth-based Instagram account connection via Meta Graph API with token management",
+      "files": [
+        "src/app/(protected)/callback/instagram/page.tsx",
+        "src/lib/fetch.ts",
+        "src/actions/integrations/index.ts",
+        "src/actions/integrations/queries.ts"
+      ]
+    },
+    {
+      "name": "Automation Management",
+      "description": "Create, edit, activate/deactivate automations with keyword triggers and response listeners",
+      "files": [
+        "src/actions/automations/index.ts",
+        "src/actions/automations/queries.ts",
+        "src/components/global/automations/builder/automation-builder.tsx",
+        "src/components/global/automations/trigger/index.tsx",
+        "src/components/global/automations/trigger/keywords.tsx",
+        "src/components/global/automations/then/then-action.tsx",
+        "src/components/global/activate-automation-button/index.tsx",
+        "src/app/(protected)/dashboard/[slug]/automations/page.tsx",
+        "src/app/(protected)/dashboard/[slug]/automations/[id]/page.tsx"
+      ]
+    },
+    {
+      "name": "Webhook Processing",
+      "description": "Instagram webhook handler for processing comment and DM events, triggering automations",
+      "files": [
+        "src/app/(protected)/api/webhook/instagram/route.ts",
+        "src/actions/webhook/queries.ts"
+      ]
+    },
+    {
+      "name": "Payment Processing",
+      "description": "Stripe integration for subscription upgrades and payment processing",
+      "files": [
+        "src/app/(protected)/api/payment/route.ts",
+        "src/app/(protected)/payment/page.tsx",
+        "src/components/global/payment-button/index.tsx",
+        "src/components/global/billing/index.tsx",
+        "src/lib/stripe.ts"
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "Main dashboard with metrics, automation list, and navigation",
+      "files": [
+        "src/app/(protected)/dashboard/page.tsx",
+        "src/app/(protected)/dashboard/[slug]/page.tsx",
+        "src/app/(protected)/dashboard/[slug]/_components/metrics/index.tsx",
+        "src/components/global/sidebar/index.tsx",
+        "src/components/global/infobar/index.tsx"
+      ]
+    },
+    {
+      "name": "Data Fetching & Caching",
+      "description": "React Query hooks for data fetching with aggressive caching and prefetching",
+      "files": [
+        "src/hooks/user-queries.ts",
+        "src/hooks/use-automations.ts",
+        "src/hooks/use-aggressive-prefetch.ts",
+        "src/providers/react-query-provider.tsx",
+        "src/react-query/prefetch.ts"
+      ]
+    },
+    {
+      "name": "DM Image Serving",
+      "description": "API endpoint for serving images in DM responses",
+      "files": [
+        "src/app/(protected)/api/dm-image/[id]/route.ts"
+      ]
+    },
+    {
+      "name": "Landing Page",
+      "description": "Public landing page with features, pricing, and call-to-action",
+      "files": [
+        "src/app/(website)/page.tsx"
+      ]
+    },
+    {
+      "name": "Theme Management",
+      "description": "Dark/light theme toggle with persistence",
+      "files": [
+        "src/components/global/theme-toggle/index.tsx",
+        "src/providers/theme-provider.tsx"
+      ]
+    },
+    {
+      "name": "Error Handling",
+      "description": "Global error logging and error boundaries",
+      "files": [
+        "src/components/global/error-logger/index.tsx"
+      ]
+    },
+    {
+      "name": "State Management",
+      "description": "Redux Toolkit for global state management",
+      "files": [
+        "src/redux/store.ts",
+        "src/redux/slices/automation.ts",
+        "src/providers/redux-provider.tsx"
+      ]
+    }
+  ]
+}

@@ -18,7 +18,13 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const automationId = params.id
+    // Validate params
+    const automationId = params?.id
+    if (!automationId || automationId.trim() === '') {
+      console.log('❌ [dm-image] Missing or invalid automation ID')
+      return NextResponse.json({ error: 'Invalid automation ID' }, { status: 400 })
+    }
+
     console.log('📸 [dm-image] Request received for automation:', automationId)
     
     const automation = await findAutomation(automationId)
@@ -39,8 +45,8 @@ export async function GET(
           imageType: imageData ? (imageData.startsWith('data:image') ? 'base64' : 'url') : 'none',
           imageLength: imageData?.length || 0,
         })
-      } catch (parseError) {
-        console.log('⚠️ [dm-image] Failed to parse commentReply:', parseError)
+      } catch (parseError: any) {
+        console.log('⚠️ [dm-image] Failed to parse commentReply:', parseError.message)
         // Not JSON, ignore
       }
     }
@@ -50,12 +56,27 @@ export async function GET(
       return NextResponse.json({ error: 'Image not found' }, { status: 404 })
     }
     
-    // Extract base64 data
-    const base64Data = imageData.split(',')[1]
-    const imageBuffer = Buffer.from(base64Data, 'base64')
-    
-    // Determine content type
-    const contentType = imageData.match(/data:image\/([^;]+)/)?.[1] || 'jpeg'
+    // Extract base64 data with validation
+    const base64Match = imageData.match(/^data:image\/([^;]+);base64,(.+)$/)
+    if (!base64Match || !base64Match[2]) {
+      console.log('❌ [dm-image] Invalid base64 image format')
+      return NextResponse.json({ error: 'Invalid image format' }, { status: 400 })
+    }
+
+    const contentType = base64Match[1] || 'jpeg'
+    const base64Data = base64Match[2]
+
+    // Decode base64 with error handling
+    let imageBuffer: Buffer
+    try {
+      imageBuffer = Buffer.from(base64Data, 'base64')
+      if (imageBuffer.length === 0) {
+        throw new Error('Decoded buffer is empty')
+      }
+    } catch (decodeError: any) {
+      console.error('❌ [dm-image] Failed to decode base64:', decodeError.message)
+      return NextResponse.json({ error: 'Failed to decode image' }, { status: 500 })
+    }
     
     console.log('✅ [dm-image] Serving image:', {
       contentType: `image/${contentType}`,
@@ -63,7 +84,7 @@ export async function GET(
       automationId,
     })
     
-    return new NextResponse(imageBuffer, {
+    return new NextResponse(imageBuffer as any, {
       headers: {
         'Content-Type': `image/${contentType}`,
         'Cache-Control': 'public, max-age=31536000, immutable',
@@ -74,8 +95,11 @@ export async function GET(
       },
     })
   } catch (error: any) {
-    console.error('❌ [dm-image] Error:', error)
-    return NextResponse.json({ error: 'Failed to serve image' }, { status: 500 })
+    console.error('❌ [dm-image] Unexpected error:', error)
+    return NextResponse.json({ 
+      error: 'Failed to serve image',
+      details: error.message 
+    }, { status: 500 })
   }
 }
 

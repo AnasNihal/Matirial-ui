@@ -4,6 +4,7 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
+  '/api/webhook(.*)', // Webhooks must be public for Meta/Instagram to access
 ])
 
 /** ✅ Protected routes (your original ones) */

@@ -1,0 +1,67 @@
+{
+  "test_type": "performance",
+  "focus": "query_section_slow_loading",
+  "tests": [
+    {
+      "id": "QP001",
+      "title": "React Query Hook Performance - useQueryAutomations",
+      "description": "Test performance of useQueryAutomations hook - measure initial load time, cache hit time, and refetch time",
+      "metrics": ["initial_load_time", "cache_hit_time", "refetch_time", "data_size"]
+    },
+    {
+      "id": "QP002",
+      "title": "React Query Hook Performance - useQueryUser",
+      "description": "Test performance of useQueryUser hook - measure response time and data fetching efficiency",
+      "metrics": ["response_time", "cache_efficiency", "refetch_performance"]
+    },
+    {
+      "id": "QP003",
+      "title": "Server Action Performance - getAllAutomations",
+      "description": "Test getAllAutomations server action response time and database query performance",
+      "metrics": ["server_response_time", "database_query_time", "data_transfer_size"]
+    },
+    {
+      "id": "QP004",
+      "title": "Server Action Performance - onUserInfo",
+      "description": "Test onUserInfo server action response time and database query efficiency",
+      "metrics": ["response_time", "database_efficiency", "cache_effectiveness"]
+    },
+    {
+      "id": "QP005",
+      "title": "Database Query Performance - Automation Queries",
+      "description": "Test database query performance for automation-related queries including includes and relations",
+      "metrics": ["query_execution_time", "relation_loading_time", "data_size"]
+    },
+    {
+      "id": "QP006",
+      "title": "Aggressive Prefetching Performance",
+      "description": "Test aggressive prefetching strategy - measure prefetch time and impact on initial page load",
+      "metrics": ["prefetch_time", "initial_load_impact", "cache_hit_rate"]
+    },
+    {
+      "id": "QP007",
+      "title": "Concurrent Query Performance",
+      "description": "Test performance when multiple queries run concurrently (user profile + automations + posts)",
+      "metrics": ["concurrent_load_time", "resource_utilization", "query_prioritization"]
+    },
+    {
+      "id": "QP008",
+      "title": "Large Dataset Performance",
+      "description": "Test query performance with large datasets (many automations, posts, keywords)",
+      "metrics": ["large_dataset_time", "pagination_efficiency", "memory_usage"]
+    },
+    {
+      "id": "QP009",
+      "title": "Cache Performance and Stale Data",
+      "description": "Test cache hit rates, stale data handling, and background refetch performance",
+      "metrics": ["cache_hit_rate", "stale_data_handling", "background_refetch_time"]
+    },
+    {
+      "id": "QP010",
+      "title": "Network Latency Impact on Queries",
+      "description": "Test query performance under different network conditions (slow 3G, fast 3G, 4G)",
+      "metrics": ["slow_network_time", "fast_network_time", "offline_handling"]
+    }
+  ]
+}
+

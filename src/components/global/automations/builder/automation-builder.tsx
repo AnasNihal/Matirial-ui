@@ -91,7 +91,6 @@ export default function AutomationBuilder({ id }: Props) {
   const [dmLinks, setDmLinks] = React.useState<Array<{ title: string; url: string }>>([])
 
   const [isLive, setIsLive] = React.useState(false)
-  const [hasChanges, setHasChanges] = React.useState(false)
 
   const prevLoadedDataRef = React.useRef<any>(null)
   const skipNextDataUpdateRef = React.useRef(false)
@@ -305,24 +304,28 @@ export default function AutomationBuilder({ id }: Props) {
     }
 
     setIsLive(auto.active || false)
-    setHasChanges(false)
   }, [data?.data])
 
-  React.useEffect(() => {
+  // Use useMemo to prevent unnecessary recalculations and blinking
+  // Memoize the stringified links to prevent unnecessary recalculations
+  const dmLinksStr = React.useMemo(() => JSON.stringify(dmLinks), [dmLinks])
+  
+  const hasChanges = React.useMemo(() => {
     if (!isLive) {
-      setHasChanges(false)
-      return
+      return false
     }
-    const changed =
-      previewPost?.id !== initialData.current.post?.id ||
+    const initialPostId = initialData.current.post?.id
+    const initialDmLinksStr = JSON.stringify(initialData.current.dmLinks)
+    
+    return (
+      previewPost?.id !== initialPostId ||
       keyword !== initialData.current.keyword ||
       dmText !== initialData.current.dmText ||
       dmEnabled !== initialData.current.dmEnabled ||
       dmImage !== initialData.current.dmImage ||
-      JSON.stringify(dmLinks) !== JSON.stringify(initialData.current.dmLinks)
-
-    setHasChanges(changed)
-  }, [previewPost, keyword, dmText, dmEnabled, dmImage, dmLinks, isLive])
+      dmLinksStr !== initialDmLinksStr
+    )
+  }, [previewPost?.id, keyword, dmText, dmEnabled, dmImage, dmLinksStr, isLive])
 
 
 async function handleActivate() {
@@ -332,10 +335,9 @@ async function handleActivate() {
       activateMutate(
         { state: true },
         {
-          onSuccess: () => {
+            onSuccess: () => {
             skipNextDataUpdateRef.current = true
             setIsLive(true)
-            setHasChanges(false)
             // Update initial data to reflect the new state
             initialData.current = {
               post: previewPost,
@@ -376,7 +378,6 @@ async function handleActivate() {
             onSuccess: () => {
               skipNextDataUpdateRef.current = true
               setIsLive(false)
-              setHasChanges(false)
               resolve()
             },
             onError: (error) => {
@@ -397,7 +398,6 @@ async function handleActivate() {
         updateMutate(undefined, {
           onSuccess: () => {
             skipNextDataUpdateRef.current = true
-            setHasChanges(false)
             // Update initial data after successful update
             initialData.current = {
               post: previewPost,
@@ -428,7 +428,6 @@ async function handleActivate() {
     setDmEnabled(initialData.current.dmEnabled)
     setDmImage(initialData.current.dmImage)
     setDmLinks(initialData.current.dmLinks)
-    setHasChanges(false)
   }
 
   // 🚀 Show skeleton ONLY if no data AND actually loading (not just stale cache)

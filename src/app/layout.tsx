@@ -37,10 +37,10 @@ export default function RootLayout({
       // 🚀 FAST: Use faster domain if available
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
-      afterSignInUrl="/callback/sign-in"
-      afterSignUpUrl="/callback/sign-in"
+      signInFallbackRedirectUrl="/dashboard"
+      signUpFallbackRedirectUrl="/dashboard"
     >
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body suppressHydrationWarning className={jakarta.className}>
           <ThemeProvider
             attribute="class"

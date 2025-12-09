@@ -145,11 +145,11 @@ export default function Home() {
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700">
-                Get Started
+              <Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700" asChild>
+                <Link href="/sign-up">Get Started</Link>
               </Button>
-              <Button size="lg" variant="outline" className="border-blue-400 hover:bg-blue-900/40">
-                Learn More
+              <Button size="lg" variant="outline" className="border-blue-400 hover:bg-blue-900/40" asChild>
+                <Link href="#features">Learn More</Link>
               </Button>
             </div>
 
@@ -177,7 +177,13 @@ export default function Home() {
               </div>
 
               <div className="mt-4 h-64 relative rounded-lg overflow-hidden bg-gradient-to-b from-slate-800 to-slate-900">
-                <Image src="/mation-image.jpg" alt="Community" fill className="object-cover" />
+                <Image 
+                  src="/mation-image.jpg" 
+                  alt="Community" 
+                  fill 
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
               </div>
 
               <div className="mt-4 flex items-center justify-between text-sm text-blue-200/80">
@@ -265,7 +271,16 @@ export default function Home() {
                 </CardContent>
 
                 <CardFooter className="pt-4">
-                  <Button className="w-full py-3 bg-blue-600 hover:bg-blue-700">{plan.cta}</Button>
+                  <Button 
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700" 
+                    asChild
+                  >
+                    {plan.name === 'Free Plan' ? (
+                      <Link href="/sign-up">{plan.cta}</Link>
+                    ) : (
+                      <Link href="/dashboard">{plan.cta}</Link>
+                    )}
+                  </Button>
                 </CardFooter>
               </div>
             </Card>

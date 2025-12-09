@@ -1,0 +1,16 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000",
+  "executionArgs": {
+    "projectName": "Mation-ui",
+    "projectPath": "C:\\Users\\salma\\Desktop\\new\\Mation-ui",
+    "testIds": [],
+    "additionalInstruction": "Focus on testing query section performance and slow loading issues. Test React Query hooks (useQueryAutomations, useQueryUser, useQueryAutomation), server actions (getAllAutomations, onUserInfo, getAutomationInfo, getProfilePosts), measure response times, cache performance, database query times, serialization overhead, and identify bottlenecks causing slow loading. Test with different data sizes and network conditions.",
+    "envs": {
+      "API_KEY": "sk-user-3Wssv48AYuiEM7KrxHxs2rQ4m2aKz0zjnoulXuEA8i0VDLS5M6AK-Zok1Yvif2fGpQxYXCIvjzsdtape-BAv84GXs-eyTVzz96H56g6VfingirQsBvvoC8irlcFmECYt_2U"
+    }
+  },
+  "proxy": "http://43c08c7a-8f81-4aba-b7b6-016e824cad62:BqpP9DNOXXlxyzkWCseuzRuhb5rYjtxR@tun.testsprite.com:8080"
+}

@@ -1,0 +1,539 @@
+[
+  {
+    "id": "TC001",
+    "title": "User Registration and Login via Clerk",
+    "description": "Validate that new users can register and existing users can log in using the Clerk authentication system with proper session management.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to sign-up page"
+      },
+      {
+        "type": "action",
+        "description": "Input valid user details and submit registration"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify successful account creation and redirect to onboarding"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to sign-in page"
+      },
+      {
+        "type": "action",
+        "description": "Input registered credentials and submit login"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify successful login and active session is maintained"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "User Authentication Failure Handling",
+    "description": "Ensure the system properly handles authentication failures such as incorrect credentials or invalid session and displays appropriate error messages.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to sign-in page"
+      },
+      {
+        "type": "action",
+        "description": "Input incorrect username and/or password and submit"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error message is shown and login is not successful"
+      },
+      {
+        "type": "action",
+        "description": "Try accessing protected routes without login"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify redirection to login page or session expiry handling"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Instagram OAuth Integration Flow",
+    "description": "Validate that users can connect their Instagram account via OAuth, tokens are stored securely, and profile data is synced correctly.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "From dashboard integrations, initiate Instagram account connection"
+      },
+      {
+        "type": "action",
+        "description": "Complete Instagram OAuth authorization in popup or redirect"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access tokens received and stored securely"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify profile data is fetched and displayed on integration page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify webhook subscription setup is successful"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Instagram OAuth Failure and Token Refresh",
+    "description": "Ensure the system properly handles OAuth failures, token expiration, and refresh scenarios with relevant user feedback.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Simulate OAuth failure by denying permissions during Instagram connection"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error message shown and no integration saved"
+      },
+      {
+        "type": "action",
+        "description": "Simulate expired Instagram token usage to fetch profile data"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify token refresh flow triggers and succeeds or prompts re-authentication"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user is notified in case of token failure requiring re-connection"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Create Comment Automation with MESSAGE Listener",
+    "description": "Verify that users can create a comment trigger automation with keyword matching and MESSAGE type manual response, including post selection and activation.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to automations creation page"
+      },
+      {
+        "type": "action",
+        "description": "Name automation and select comment trigger"
+      },
+      {
+        "type": "action",
+        "description": "Add one or more keywords for triggering"
+      },
+      {
+        "type": "action",
+        "description": "Select Instagram posts for keyword matching"
+      },
+      {
+        "type": "action",
+        "description": "Configure MESSAGE listener response text and rich media if any"
+      },
+      {
+        "type": "action",
+        "description": "Activate automation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify automation saved and shown in active list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify automation triggers and sends configured manual message on matching comment event"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Create DM Automation with SMARTAI Listener",
+    "description": "Validate creation of DM automations triggered by keywords with SMARTAI listener producing AI-powered responses and activation.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to automations creation page"
+      },
+      {
+        "type": "action",
+        "description": "Select DM trigger and input keyword triggers"
+      },
+      {
+        "type": "action",
+        "description": "Choose SMARTAI as the listener type"
+      },
+      {
+        "type": "action",
+        "description": "Configure AI response settings if applicable"
+      },
+      {
+        "type": "action",
+        "description": "Activate automation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify automation is saved and active"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify DM events containing keywords trigger AI response generation and delivery"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Webhook Event Handling for Comments and DMs",
+    "description": "Ensure incoming Instagram webhook events for comments and DMs are validated, matched against active automations, and responses are executed correctly with metrics updated.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send valid Instagram comment event POST to webhook endpoint"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify event validation succeeds and matching automation triggers response"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response (manual or AI) is sent"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify metrics for response counts are incremented"
+      },
+      {
+        "type": "action",
+        "description": "Send valid Instagram DM event POST to webhook endpoint"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify similar validation, matching, response, and metrics update"
+      },
+      {
+        "type": "action",
+        "description": "Send invalid or malformed Instagram event POST"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify webhook returns appropriate error status without system crash"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Dashboard Metrics and Automation Status Display",
+    "description": "Verify dashboard UI correctly displays overview metrics, active/inactive automation statuses, and updates these in near-real-time after events.",
+    "category": "ui",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as a user with connected Instagram and active automations"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify dashboard overview metrics reflect current data"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify automation listings show accurate activation status"
+      },
+      {
+        "type": "action",
+        "description": "Trigger comment or DM events to invoke automations"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify metrics panel updates to reflect new engagement counts"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Subscription Plan Upgrade via Stripe Checkout",
+    "description": "Validate that users can successfully upgrade from Free to Pro plan through Stripe checkout and gain access to SMARTAI features.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to account settings or payment page"
+      },
+      {
+        "type": "action",
+        "description": "Select Pro subscription plan and initiate checkout"
+      },
+      {
+        "type": "action",
+        "description": "Complete Stripe payment process with valid payment details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify subscription status updates to Pro"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user is granted access to SMARTAI features"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Subscription Upgrade Failure Handling",
+    "description": "Ensure payment failures during subscription upgrades are handled gracefully with informative user messages and no feature access granted.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Initiate a plan upgrade and provide invalid or declined payment details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify payment failure message is shown and subscription is not upgraded"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify user remains on current plan without SMARTAI access"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Data Fetching and Caching Efficiency",
+    "description": "Validate React Query hooks effectively cache data for user, automations, and integrations, minimizing redundant API calls and ensuring responsive UI.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Load dashboard and automations pages multiple times"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that network calls are minimized due to effective caching"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify UI shows fresh data due to aggressive prefetching strategies"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Dark/Light Theme Toggle",
+    "description": "Check that the dark and light mode toggle switches UI theme correctly across pages and persists user preference.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to dashboard or any protected UI page"
+      },
+      {
+        "type": "action",
+        "description": "Toggle the theme switch to dark mode"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify UI switches to dark colors consistently"
+      },
+      {
+        "type": "action",
+        "description": "Toggle back to light mode"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify UI switches back to light colors"
+      },
+      {
+        "type": "action",
+        "description": "Reload page or log out and log back in"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify theme preference is persisted"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Rich Media Support in Automated Responses",
+    "description": "Ensure that manual and SMARTAI automated responses can include rich media such as images, links, and formatted text displayed correctly on Instagram.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create or edit an automation with MESSAGE listener including images, links, and formatted text"
+      },
+      {
+        "type": "action",
+        "description": "Activate automation"
+      },
+      {
+        "type": "action",
+        "description": "Trigger automation by sending a matching comment or DM"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify automated response received by Instagram contains all rich media elements correctly"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Error Handling and User Notifications",
+    "description": "Test global error logger captures errors and verify users receive clear, user-friendly error messages during failures in various flows.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Trigger an error in automation creation by submitting invalid data"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify validation errors are displayed to user without crash"
+      },
+      {
+        "type": "action",
+        "description": "Cause network failure during Instagram OAuth or API fetch"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error is logged, and user is shown a helpful error message"
+      },
+      {
+        "type": "action",
+        "description": "Cause unexpected backend error during webhook processing"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error handling does not crash system and returns proper status"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Loading State UI Components",
+    "description": "Validate skeleton loaders and loading indicators appear appropriately during data fetching or slow operations without blocking user interaction unexpectedly.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to automations page with artificial network delay"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify automation-list-skeleton loader is visible until data is loaded"
+      },
+      {
+        "type": "action",
+        "description": "Open automation builder with slow data response"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify automation-builder-skeleton loader displayed correctly"
+      },
+      {
+        "type": "action",
+        "description": "Perform Instagram integration or settings loading"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify appropriate page-level loading spinners appear"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "End-to-End New User Onboarding Flow",
+    "description": "Verify a new user can register, connect Instagram, and create a first automation with guided prompts and that all steps complete without errors.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Register a new user via Clerk sign-up flow"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify successful registration and redirect to onboarding"
+      },
+      {
+        "type": "action",
+        "description": "Connect Instagram account through OAuth during onboarding"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify Instagram integration success and profile sync"
+      },
+      {
+        "type": "action",
+        "description": "Follow onboarding prompts to create a basic automation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify automation is saved, activated, and visible on dashboard"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Automation Activation and Deactivation Flow",
+    "description": "Verify users can activate and deactivate automations from the dashboard and changes reflect immediately in UI and automation behavior.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to automation listing"
+      },
+      {
+        "type": "action",
+        "description": "Deactivate an active automation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify automation status changes to inactive in UI"
+      },
+      {
+        "type": "action",
+        "description": "Trigger event matching automation keywords"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify automation does not respond when inactive"
+      },
+      {
+        "type": "action",
+        "description": "Activate the automation again"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify automation status is active and response works on trigger"
+      }
+    ]
+  }
+]

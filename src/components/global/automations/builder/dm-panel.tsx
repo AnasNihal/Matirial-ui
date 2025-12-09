@@ -53,23 +53,38 @@ const DmPanel = ({
   const [linkUrl, setLinkUrl] = React.useState('')
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const hasInitializedRef = React.useRef(false)
+  const isUserChangeRef = React.useRef(false)
+  const prevDmLinksRef = React.useRef<string>('')
 
-  // Sync local state with props when they change
+  // Initialize prevDmLinksRef on mount
   React.useEffect(() => {
-    setLocalDmLinks(dmLinks)
+    prevDmLinksRef.current = JSON.stringify(dmLinks)
+  }, [])
+
+  // Sync local state with props when they change (only from parent, not from user actions)
+  React.useEffect(() => {
+    const currentDmLinksStr = JSON.stringify(dmLinks)
+    // Only update if it's a parent-initiated change (not from our own setDmLinks call)
+    if (!isUserChangeRef.current && currentDmLinksStr !== prevDmLinksRef.current) {
+      setLocalDmLinks(dmLinks)
+      prevDmLinksRef.current = currentDmLinksStr
+    }
+    // Reset the flag after processing
+    isUserChangeRef.current = false
   }, [dmLinks])
 
   React.useEffect(() => {
     setLocalDmImage(dmImage)
   }, [dmImage])
 
-  // Sync with parent if callbacks provided - update immediately
-  // Only sync when local state differs from prop (user made a change)
-  React.useEffect(() => {
-    if (setDmLinks && JSON.stringify(localDmLinks) !== JSON.stringify(dmLinks)) {
-      setDmLinks(localDmLinks)
+  // Sync with parent ONLY when user makes a change (not on prop updates)
+  // This prevents circular updates
+  const updateParentDmLinks = React.useCallback((newLinks: DmLink[]) => {
+    if (setDmLinks) {
+      isUserChangeRef.current = true
+      setDmLinks(newLinks)
     }
-  }, [localDmLinks, setDmLinks, dmLinks])
+  }, [setDmLinks])
 
   // Only initialize from database data ONCE on initial load, never reset after user edits
   React.useEffect(() => {
@@ -154,22 +169,25 @@ const DmPanel = ({
       url: finalUrl,
     }
 
+    let updatedLinks: DmLink[]
     if (editingLinkIndex !== null) {
       // Update existing link
-      const updatedLinks = [...localDmLinks]
+      updatedLinks = [...localDmLinks]
       updatedLinks[editingLinkIndex] = newLink
-      setLocalDmLinks(updatedLinks)
     } else {
       // Add new link
-      setLocalDmLinks([...localDmLinks, newLink])
+      updatedLinks = [...localDmLinks, newLink]
     }
-
+    
+    setLocalDmLinks(updatedLinks)
+    updateParentDmLinks(updatedLinks)
     handleCloseLinkModal()
   }
 
   const handleDeleteLink = (index: number) => {
     const updatedLinks = localDmLinks.filter((_, i) => i !== index)
     setLocalDmLinks(updatedLinks)
+    updateParentDmLinks(updatedLinks)
   }
 
   return (

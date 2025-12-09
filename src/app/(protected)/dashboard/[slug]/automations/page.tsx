@@ -7,7 +7,7 @@ const Page = (props: Props) => {
 
   return (
     <div>
-      <AutomationList />
+        <AutomationList />
     </div>
   )
 }

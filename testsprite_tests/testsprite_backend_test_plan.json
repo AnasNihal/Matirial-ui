@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "user authentication via clerk",
+    "description": "Test the user authentication endpoints to ensure secure sign-up, sign-in, and session management using Clerk authentication system without errors."
+  },
+  {
+    "id": "TC002",
+    "title": "instagram account integration oauth flow",
+    "description": "Verify the Instagram account integration process including OAuth account connection, token management, profile data syncing, and webhook subscription setup."
+  },
+  {
+    "id": "TC003",
+    "title": "automation creation and trigger execution",
+    "description": "Test creating comment and DM automations with keyword triggers and verify that MESSAGE and SMARTAI listener responses are executed correctly upon matching triggers."
+  },
+  {
+    "id": "TC004",
+    "title": "webhook event handling and processing",
+    "description": "Validate the webhook handler endpoint to ensure it correctly validates incoming Instagram events, processes them without delay or failure, triggers automations, and returns proper status codes."
+  },
+  {
+    "id": "TC005",
+    "title": "dashboard metrics and automation status display",
+    "description": "Verify that the dashboard UI displays accurate real-time or near-real-time metrics and automation statuses reflecting the current system state."
+  },
+  {
+    "id": "TC006",
+    "title": "subscription upgrade and stripe payment processing",
+    "description": "Test the subscription upgrade flow from Free to Pro plan including Stripe checkout, payment confirmation, and access to advanced SMARTAI features."
+  },
+  {
+    "id": "TC007",
+    "title": "data fetching and caching with react query",
+    "description": "Ensure that data fetching hooks use React Query caching effectively to optimize performance and minimize unnecessary network calls."
+  },
+  {
+    "id": "TC008",
+    "title": "ui components rendering and theme toggling",
+    "description": "Test that UI components render correctly with consistent styling and responsive behavior, including the dark/light theme toggle functionality."
+  },
+  {
+    "id": "TC009",
+    "title": "error handling and user friendly messages",
+    "description": "Verify that error handling mechanisms capture and log errors without crashing the app and display clear, helpful user-facing error messages."
+  },
+  {
+    "id": "TC010",
+    "title": "end to end user flows",
+    "description": "Test all key user flows including onboarding, automation creation, and subscription upgrade to ensure they complete successfully without functional bugs."
+  }
+]

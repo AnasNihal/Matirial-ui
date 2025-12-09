@@ -32,14 +32,19 @@ export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('hub.verify_token')
   const challenge = req.nextUrl.searchParams.get('hub.challenge')
   
-
+  // Validate required parameters
+  if (!mode || !token || !challenge) {
+    console.log('❌ [Webhook GET] Missing required parameters')
+    return new NextResponse('Missing required parameters', { status: 400 })
+  }
 
   // Verify the token matches your verify token
   if (mode === 'subscribe' && token === process.env.WEBHOOK_VERIFY_TOKEN) {
-    console.log('Webhook verified')
-    return new NextResponse(challenge)
+    console.log('✅ [Webhook GET] Webhook verified successfully')
+    return new NextResponse(challenge, { status: 200 })
   }
 
+  console.log('❌ [Webhook GET] Verification failed - invalid token or mode')
   return new NextResponse('Forbidden', { status: 403 })
 }
 
@@ -48,8 +53,18 @@ export async function POST(req: NextRequest) {
   console.log('=== Webhook Received ===')
   
   try {
-    const webhook_payload = await req.json()
-    console.log('Full Payload:', JSON.stringify(webhook_payload, null, 2))
+    // Parse JSON payload with error handling
+    let webhook_payload: any
+    try {
+      webhook_payload = await req.json()
+      console.log('Full Payload:', JSON.stringify(webhook_payload, null, 2))
+    } catch (jsonError: any) {
+      console.error('❌ [Webhook POST] Failed to parse JSON:', jsonError.message)
+      return NextResponse.json(
+        { message: 'Invalid JSON payload', error: jsonError.message },
+        { status: 200 } // Return 200 to prevent Meta retries
+      )
+    }
 
     // Check if it's an Instagram webhook
     if (webhook_payload.object !== 'instagram') {
@@ -437,21 +452,23 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
       
       if (aiResponse) {
         // Save chat history
-        const receiver = createChatHistory(
+        // User message: sender = fromUserId, receiver = pageId
+        const userMessage = createChatHistory(
           automation.id,
-          pageId,
           fromUserId,
+          pageId,
           commentText
         )
         
-        const sender = createChatHistory(
+        // AI message: sender = pageId, receiver = fromUserId
+        const aiMessage = createChatHistory(
           automation.id,
           pageId,
           fromUserId,
           aiResponse
         )
         
-        await client.$transaction([receiver, sender])
+        await client.$transaction([userMessage, aiMessage])
 
         // Send private reply
         const privateReply = await sendPrivateReplyToComment(
@@ -566,21 +583,23 @@ async function handleMessagingEvent(entry: any, webhook_payload: any) {
       const aiResponse = aiMessage.choices[0]?.message?.content
       
       if (aiResponse) {
-        const receiver = createChatHistory(
+        // User message: sender = senderId, receiver = pageId
+        const userMessage = createChatHistory(
           automation.id,
-          pageId,
           senderId,
+          pageId,
           messageText
         )
         
-        const sender = createChatHistory(
+        // AI message: sender = pageId, receiver = senderId
+        const aiMessage = createChatHistory(
           automation.id,
           pageId,
           senderId,
           aiResponse
         )
         
-        await client.$transaction([receiver, sender])
+        await client.$transaction([userMessage, aiMessage])
 
         const dm = await sendDM(pageId, senderId, aiResponse, token)
 
@@ -593,6 +612,7 @@ async function handleMessagingEvent(entry: any, webhook_payload: any) {
   }
 
   // Handle conversation continuation
+  // Note: recipientId is the page, senderId is the user
   const customerHistory = await getChatHistory(recipientId, senderId)
   
   if (customerHistory.history.length > 0) {
@@ -620,21 +640,23 @@ async function handleMessagingEvent(entry: any, webhook_payload: any) {
       const aiResponse = aiMessage.choices[0]?.message?.content
       
       if (aiResponse) {
-        const receiver = createChatHistory(
+        // User message: sender = senderId, receiver = pageId
+        const userMessage = createChatHistory(
           automation.id,
-          pageId,
           senderId,
+          pageId,
           messageText
         )
         
-        const sender = createChatHistory(
+        // AI message: sender = pageId, receiver = senderId
+        const aiMessage = createChatHistory(
           automation.id,
           pageId,
           senderId,
           aiResponse
         )
         
-        await client.$transaction([receiver, sender])
+        await client.$transaction([userMessage, aiMessage])
 
         // ✅ Use PAGE ACCESS TOKEN from env
         const pageToken = process.env.META_PAGE_ACCESS_TOKEN

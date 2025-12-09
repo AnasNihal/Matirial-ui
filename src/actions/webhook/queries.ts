@@ -165,10 +165,16 @@ export const getKeywordPost = async (postId: string, automationId: string) => {
   })
 }
 
-export const getChatHistory = async (sender: string, reciever: string) => {
+export const getChatHistory = async (pageId: string, userId: string) => {
+  // Get ALL messages in the conversation (both directions)
   const history = await client.dms.findMany({
     where: {
-      AND: [{ senderId: sender }, { reciever }],
+      OR: [
+        // Messages from user to page
+        { senderId: userId, reciever: pageId },
+        // Messages from page to user
+        { senderId: pageId, reciever: userId },
+      ],
     },
     orderBy: { createdAt: 'asc' },
   })
@@ -181,13 +187,17 @@ export const getChatHistory = async (sender: string, reciever: string) => {
     }
   }
   
+  // Map chat history to OpenAI format
+  // If senderId is the page, it's an assistant message
+  // If senderId is the user, it's a user message
   const chatSession: {
     role: 'assistant' | 'user'
     content: string
   }[] = history.map((chat) => {
+    const isAssistant = chat.senderId === pageId
     return {
-      role: chat.reciever ? 'assistant' : 'user',
-      content: chat.message!,
+      role: isAssistant ? 'assistant' : 'user',
+      content: chat.message || '',
     }
   })
 
