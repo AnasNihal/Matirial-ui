@@ -139,29 +139,18 @@ export const getAllAutomations = async () => {
       
       console.log('✅ [getAllAutomations] Returning', serializedAutomations.length, 'automations')
       
-      // ✅ Final validation: Ensure it's serializable
-      let finalResult
+      // ✅ OPTIMIZED: Single validation instead of double
       try {
-        const testString = JSON.stringify(serializedAutomations)
-        console.log('✅ [getAllAutomations] Serialization validation passed, length:', testString.length)
-        
         // ✅ Create the final result object
-        finalResult = { status: 200, data: serializedAutomations }
+        const finalResult = { status: 200, data: serializedAutomations }
         
-        // ✅ Double-check the result is serializable
-        const resultString = JSON.stringify(finalResult)
-        console.log('✅ [getAllAutomations] Final result serialization passed, length:', resultString.length)
-        console.log('✅ [getAllAutomations] Final result structure:', {
-          hasStatus: 'status' in finalResult,
-          hasData: 'data' in finalResult,
-          statusValue: finalResult.status,
-          dataLength: finalResult.data?.length,
-        })
+        // ✅ Single validation check
+        JSON.stringify(finalResult)
+        console.log('✅ [getAllAutomations] Returning', serializedAutomations.length, 'automations')
         
         return finalResult
       } catch (validateError) {
         console.error('❌ [getAllAutomations] Serialization validation failed:', validateError)
-        console.error('❌ [getAllAutomations] Failed data:', serializedAutomations)
         return { status: 500, data: [] }
       }
     }
@@ -283,16 +272,8 @@ export const getAutomationInfo = async (id: string) => {
       } : null,
     }
     
-    // ✅ Validate serialization
-    try {
-      JSON.stringify(serialized)
-      console.log('✅ [getAutomationInfo] Serialization validation passed')
-    } catch (serializeError) {
-      console.error('❌ [getAutomationInfo] Serialization validation failed:', serializeError)
-      return { status: 500, data: null }
-    }
-    
-    console.log('✅ [getAutomationInfo] Returning serialized automation')
+    // ✅ OPTIMIZED: Return directly - Prisma handles serialization for Server Actions
+    console.log('✅ [getAutomationInfo] Returning automation data')
     return { status: 200, data: serialized }
   } catch (error: any) {
     console.error('❌ [getAutomationInfo] ERROR:', error)

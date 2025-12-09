@@ -16,33 +16,39 @@ export function useAggressivePrefetch() {
       return
     }
 
-    // 🔥 Prefetch EVERYTHING on app load in parallel
+    // 🔥 Prefetch with timeout - don't block more than 2s
     const prefetchAll = async () => {
       try {
-        await Promise.all([
-          // Prefetch user profile
-          queryClient.prefetchQuery({
-            queryKey: ['user-profile'],
-            queryFn: onUserInfo,
-            staleTime: Infinity,
-          }).catch(() => {}), // Silent fail - prefetching is non-critical
-          
-          // Prefetch automations list
-          queryClient.prefetchQuery({
-            queryKey: ['user-automations'],
-            queryFn: getAllAutomations,
-            staleTime: Infinity,
-          }).catch(() => {}), // Silent fail - prefetching is non-critical
-          
-          // Prefetch Instagram posts
+        // Priority 1 & 2: Critical data with timeout
+        await Promise.race([
+          Promise.all([
+            // Priority 1: User profile (critical)
+            queryClient.prefetchQuery({
+              queryKey: ['user-profile'],
+              queryFn: onUserInfo,
+              staleTime: 30 * 60 * 1000,
+            }).catch(() => {}),
+            
+            // Priority 2: Automations (important)
+            queryClient.prefetchQuery({
+              queryKey: ['user-automations'],
+              queryFn: getAllAutomations,
+              staleTime: 30 * 60 * 1000,
+            }).catch(() => {}),
+          ]),
+          new Promise(resolve => setTimeout(resolve, 2000)) // 2s timeout
+        ])
+        
+        // Defer non-critical prefetches (Instagram posts)
+        setTimeout(() => {
           queryClient.prefetchQuery({
             queryKey: ['instagram-media'],
             queryFn: getProfilePosts,
-            staleTime: Infinity,
-          }).catch(() => {}), // Silent fail - prefetching is non-critical
-        ])
+            staleTime: 30 * 60 * 1000,
+          }).catch(() => {})
+        }, 100)
         
-        console.log('🚀 All data prefetched successfully!')
+        console.log('🚀 Critical data prefetched successfully!')
       } catch (error) {
         // Silent fail - prefetching is non-critical
       }

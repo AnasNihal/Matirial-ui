@@ -69,14 +69,14 @@ export const useQueryAutomations = () => {
     },
     staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes
     gcTime: Infinity, // 🔥 NEVER garbage collect
-    refetchOnMount: 'always', // ✅ Always refetch, but show cached data immediately
+    refetchOnMount: false, // ✅ Use cache first - don't refetch unnecessarily
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     retry: 1, // ✅ Retry once on failure
     // 🔥 Show cached data instantly while fetching in background
     placeholderData: (previousData) => previousData,
-    // ✅ Don't block UI - show cached data immediately, refetch in background
-    networkMode: 'offlineFirst',
+    // ✅ Better performance with online mode
+    networkMode: 'online',
   })
 }
 
@@ -101,13 +101,13 @@ export const useQueryAutomation = (id: string) => {
     staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes
     gcTime: Infinity, // 🔥 KEEP FOREVER
     enabled: !!id,
-    refetchOnMount: 'always', // ✅ Always refetch, but show cached data immediately
+    refetchOnMount: false, // ✅ Use cache first - don't refetch unnecessarily
     refetchOnWindowFocus: false,
     retry: 1, // ✅ Retry once on failure
     // 🔥 Show cached data instantly while fetching in background
     placeholderData: (previousData) => previousData,
-    // ✅ Don't block UI - show cached data immediately, refetch in background
-    networkMode: 'offlineFirst',
+    // ✅ Better performance with online mode
+    networkMode: 'online',
   })
 }
 
@@ -149,13 +149,13 @@ export const useQueryUser = () => {
     },
     staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes
     gcTime: Infinity,
-    refetchOnMount: 'always', // ✅ Always refetch, but show cached data immediately
+    refetchOnMount: false, // ✅ Use cache first - don't refetch unnecessarily
     refetchOnWindowFocus: false,
     retry: 1, // ✅ Retry once on failure
     // 🔥 Show cached data instantly while fetching in background
     placeholderData: (previousData) => previousData,
-    // ✅ Don't block UI - show cached data immediately, refetch in background
-    networkMode: 'offlineFirst',
+    // ✅ Better performance with online mode
+    networkMode: 'online',
   })
 }
 
