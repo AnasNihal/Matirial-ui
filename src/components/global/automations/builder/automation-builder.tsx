@@ -6,7 +6,7 @@ import IntegrationWarningModal from './integration-warning-modal'
 import { useEditAutomation } from '@/hooks/use-automations'
 import { useMutationData, useMutationDataState } from '@/hooks/use-mutation-data'
 import { Input } from '@/components/ui/input'
-import { ChevronLeft, ChevronRight, PencilIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, PencilIcon, X } from 'lucide-react'
 import ActivateAutomationButton from '@/components/global/activate-automation-button'
 import AutomationBuilderSkeleton from '@/components/global/loader/automation-builder-skeleton'
 
@@ -72,6 +72,8 @@ export default function AutomationBuilder({ id }: Props) {
   const { latestVariable } = useMutationDataState(['update-automation'])
 
   const [activeStep, setActiveStep] = React.useState<'post' | 'keyword' | 'dm'>('post')
+  const [bottomSheetOpen, setBottomSheetOpen] = React.useState(false)
+  const [phonePreviewStep, setPhonePreviewStep] = React.useState<'post' | 'keyword' | 'dm'>('post')
 
   const [previewPost, setPreviewPost] = React.useState<{
     id: string
@@ -515,7 +517,7 @@ async function handleActivate() {
               keyword={keyword}
               dmText={dmText}
               dmEnabled={dmEnabled}
-              activeStep={activeStep}
+              activeStep={phonePreviewStep}
               username={igUsername}
               profilePic={igProfilePic}
               dmImage={dmImage}
@@ -524,8 +526,30 @@ async function handleActivate() {
           </div>
         </div>
 
-        {/* RIGHT SIDE - Scrollable */}
-        <div className="flex flex-col gap-4 overflow-y-auto overflow-x-hidden pr-2">
+        {/* MOBILE/TABLET TABS - Below phone preview */}
+        <div className="xl:hidden flex items-center justify-center gap-x-2 mb-4">
+          {['post', 'keyword', 'dm'].map((step) => (
+            <button
+              key={step}
+              onClick={() => {
+                const stepValue = step as 'post' | 'keyword' | 'dm'
+                setActiveStep(stepValue)
+                setPhonePreviewStep(stepValue)
+                setBottomSheetOpen(true)
+              }}
+              className={`px-4 py-2 rounded-full border text-sm capitalize transition-colors ${
+                phonePreviewStep === step
+                  ? 'border-app-blue text-app-text-primary bg-app-blue/10'
+                  : 'border-app-border hover:bg-app-bg-secondary text-text-secondary'
+              }`}
+            >
+              {step}
+            </button>
+          ))}
+        </div>
+
+        {/* RIGHT SIDE - Scrollable - Hidden on mobile/tablet */}
+        <div className="hidden xl:flex flex-col gap-4 overflow-y-auto overflow-x-hidden pr-2">
           {/* STEP INDICATOR */}
           <div className="flex-shrink-0 flex items-center justify-between text-xs text-text-secondary">
             <div className="flex gap-x-2">
@@ -597,6 +621,99 @@ async function handleActivate() {
           </div>
         </div>
       </div>
+
+      {/* MOBILE/TABLET BOTTOM SHEETS */}
+      {/* Backdrop */}
+      {bottomSheetOpen && (
+        <div
+          className="xl:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setBottomSheetOpen(false)}
+        />
+      )}
+
+      {/* Post Bottom Sheet */}
+      {bottomSheetOpen && activeStep === 'post' && (
+        <div className="xl:hidden fixed inset-x-0 bottom-0 z-50 bg-app-card-bg border-t border-app-border rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col">
+          <div className="flex-shrink-0 px-4 pt-4 pb-2 flex items-center justify-between border-b border-app-border">
+            <h3 className="text-lg font-semibold text-app-text-primary">Select Post</h3>
+            <button
+              onClick={() => {
+                setBottomSheetOpen(false)
+              }}
+              className="text-text-secondary hover:text-app-text-primary p-2"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            <PostPanel
+              id={id}
+              isActive={true}
+              onFocus={() => {}}
+              selectedPost={previewPost}
+              setSelectedPost={setPreviewPost}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Keyword Bottom Sheet */}
+      {bottomSheetOpen && activeStep === 'keyword' && (
+        <div className="xl:hidden fixed inset-x-0 bottom-0 z-50 bg-app-card-bg border-t border-app-border rounded-t-3xl shadow-2xl h-[45vh] flex flex-col">
+          <div className="flex-shrink-0 px-4 pt-4 pb-2 flex items-center justify-between border-b border-app-border">
+            <h3 className="text-lg font-semibold text-app-text-primary">Add Keyword</h3>
+            <button
+              onClick={() => {
+                setBottomSheetOpen(false)
+              }}
+              className="text-text-secondary hover:text-app-text-primary p-2"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            <KeywordPanel
+              id={id}
+              isActive={true}
+              onFocus={() => {}}
+              keywordPreview={keyword}
+              setKeywordPreview={setKeyword}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* DM Bottom Sheet */}
+      {bottomSheetOpen && activeStep === 'dm' && (
+        <div className="xl:hidden fixed inset-x-0 bottom-0 z-50 bg-app-card-bg border-t border-app-border rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col">
+          <div className="flex-shrink-0 px-4 pt-4 pb-2 flex items-center justify-between border-b border-app-border">
+            <h3 className="text-lg font-semibold text-app-text-primary">Configure DM</h3>
+            <button
+              onClick={() => {
+                setBottomSheetOpen(false)
+              }}
+              className="text-text-secondary hover:text-app-text-primary p-2"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 pb-4">
+            <DmPanel
+              id={id}
+              isActive={true}
+              onFocus={() => {}}
+              dmPreview={dmText}
+              setDmPreview={setDmText}
+              dmEnabled={dmEnabled}
+              setDmEnabled={setDmEnabled}
+              dmImage={dmImage}
+              setDmImage={setDmImage}
+              dmLinks={dmLinks}
+              setDmLinks={setDmLinks}
+            />
+          </div>
+        </div>
+      )}
     </div>
     </>
   )

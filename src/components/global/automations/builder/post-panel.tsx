@@ -86,7 +86,7 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
     <div
       className={`rounded-xl border ${
         isActive ? 'border-blue-500' : 'border-app-border'
-      } bg-app-card-bg p-4`}
+      } bg-app-card-bg p-4 xl:block border-0 xl:border`}
       onClick={onFocus}
     >
       <div className="flex items-center justify-between mb-3">
