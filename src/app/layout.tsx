@@ -1,6 +1,7 @@
 
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "sonner";
@@ -53,6 +54,7 @@ export default function RootLayout({
             </ReduxProvider>
             <Toaster />
           </ThemeProvider>
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>
