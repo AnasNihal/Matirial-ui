@@ -58,9 +58,9 @@ const Page = async ({ searchParams: { code } }: Props) => {
       })
       
       if (result.status === 200 && result.data) {
-        console.log('🔵 [Instagram Callback] Result data:', {
-    firstname: result.data.firstname ?? "",
-    lastname: result.data.lastname ?? "",
+    console.log('🔵 [Instagram Callback] Result data:', {
+    firstname: (result.data as any)?.firstname ?? "",
+    lastname: (result.data as any)?.lastname ?? "",
 
         })
         
