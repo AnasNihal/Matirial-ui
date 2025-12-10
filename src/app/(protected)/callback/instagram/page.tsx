@@ -59,8 +59,9 @@ const Page = async ({ searchParams: { code } }: Props) => {
       
       if (result.status === 200 && result.data) {
         console.log('🔵 [Instagram Callback] Result data:', {
-          firstname: result.data.firstname,
-          lastname: result.data.lastname,
+    firstname: result.data.firstname ?? "",
+    lastname: result.data.lastname ?? "",
+
         })
         
         // Build redirect URL using result data
