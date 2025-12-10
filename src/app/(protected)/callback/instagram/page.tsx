@@ -64,13 +64,17 @@ const Page = async ({ searchParams: { code } }: Props) => {
 
         })
         
-        // Build redirect URL using result data
-        let redirectUrl = '/dashboard/integrations'
-        
-        if (result.data.firstname && result.data.lastname) {
-          redirectUrl = `/dashboard/${result.data.firstname}${result.data.lastname}/integrations`
-          console.log('✅ [Instagram Callback] Using result data for redirect:', redirectUrl)
-        } else {
+                  // Build redirect URL using result data
+          let redirectUrl = '/dashboard/integrations'
+
+          // Cast to any to avoid TypeScript union error
+          const data: any = result.data;
+
+          if (data.firstname && data.lastname) {
+            redirectUrl = `/dashboard/${data.firstname}${data.lastname}/integrations`
+            console.log('✅ [Instagram Callback] Using result data for redirect:', redirectUrl)
+          } else {
+
           console.warn('⚠️ [Instagram Callback] Missing firstname/lastname, fetching user data...')
           // Fallback: Get user data to build redirect URL
           try {
