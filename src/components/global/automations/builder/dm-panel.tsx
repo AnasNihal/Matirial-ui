@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useQueryAutomation } from '@/hooks/user-queries'
+import AlertBox from '../../alert/alert'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -50,6 +51,8 @@ const DmPanel = ({
   const [isLinkModalOpen, setIsLinkModalOpen] = React.useState(false)
   const [editingLinkIndex, setEditingLinkIndex] = React.useState<number | null>(null)
   const [linkTitle, setLinkTitle] = React.useState('')
+  const [alertOpen, setAlertOpen] = React.useState(false);
+  const [alertMessage, setAlertMessage] = React.useState("");
   const [linkUrl, setLinkUrl] = React.useState('')
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const hasInitializedRef = React.useRef(false)
@@ -98,22 +101,31 @@ const DmPanel = ({
     }
   }, [data?.data?.listener, setDmPreview, setDmEnabled]) // Removed dmPreview from dependencies
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      // Convert to base64 for preview/storage
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const imageData = reader.result as string
-        setLocalDmImage(imageData)
-        // Update parent immediately when user selects image
-        if (setDmImage) {
-          setDmImage(imageData)
-        }
-      }
-      reader.readAsDataURL(file)
-    }
+const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  // ❌ Reject images above 1MB
+  if (file.size > 1024 * 1024) {
+    setAlertMessage("Image must be less than 1 MB. Please upload a smaller file.");
+    setAlertOpen(true);
+
+    // Reset file input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    return;
   }
+
+  // Convert to base64 for preview
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    const imageData = reader.result as string;
+    setLocalDmImage(imageData);
+    if (setDmImage) setDmImage(imageData);
+  };
+  reader.readAsDataURL(file);
+};
+
 
   const handleRemoveImage = () => {
     setLocalDmImage(null)
@@ -420,7 +432,13 @@ const DmPanel = ({
           </div>
         </DialogContent>
       </Dialog>
+      <AlertBox
+        open={alertOpen}
+        message={alertMessage}
+        onClose={() => setAlertOpen(false)}
+      />
     </div>
+    
   )
 }
 
