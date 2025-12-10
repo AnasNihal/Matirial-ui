@@ -30,8 +30,11 @@ const IntegrationCard = ({ description, icon, strategy, title }: Props) => {
   const integrated = integrations.find(
     (integration) => {
       // Match by name (database field) or by strategy
-      const nameMatch = integration.name === strategy || 
-                       integration.name === 'INSTAGRAM' && strategy === 'INSTAGRAM'
+    const nameMatch =
+  String(integration.name) === String(strategy) ||
+  (String(integration.name) === 'INSTAGRAM' && String(strategy) === 'INSTAGRAM');
+
+
       return nameMatch
     }
   )
