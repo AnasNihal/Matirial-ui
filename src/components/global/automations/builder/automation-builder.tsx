@@ -633,7 +633,7 @@ async function handleActivate() {
 
       {/* Post Bottom Sheet */}
       {bottomSheetOpen && activeStep === 'post' && (
-        <div className="xl:hidden fixed inset-x-0 bottom-0 z-50 bg-app-card-bg border-t border-app-border rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col">
+        <div className="xl:hidden fixed inset-x-0 bottom-0 z-50 bg-app-card-bg border-t border-app-border rounded-t-3xl shadow-2xl max-h-[82vh] flex flex-col">
           <div className="flex-shrink-0 px-4 pt-4 pb-2 flex items-center justify-between border-b border-app-border">
             <h3 className="text-lg font-semibold text-app-text-primary">Select Post</h3>
             <button
@@ -645,7 +645,7 @@ async function handleActivate() {
               <X size={20} />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <div className="h-[70vh] overflow-y-auto px-4 pb-4">
             <PostPanel
               id={id}
               isActive={true}

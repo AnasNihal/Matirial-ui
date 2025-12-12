@@ -201,7 +201,10 @@ const PostPanel = ({ id, isActive, onFocus, selectedPost, setSelectedPost }: Pro
 
       {/* Modal for selecting post/reel */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="bg-app-card-bg rounded-3xl p-6 max-w-2xl max-h-[85vh] overflow-hidden flex flex-col border border-app-border shadow-2xl">
+          <DialogContent
+            className="bg-app-card-bg rounded-3xl p-6 max-w-2xl max-h-[85vh] overflow-hidden flex flex-col border border-app-border shadow-2xl
+            [&>button:last-child]:hidden"
+          >
           <DialogHeader className="flex-shrink-0 pb-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-lg font-semibold text-app-text-primary">
