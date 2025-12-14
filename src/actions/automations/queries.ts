@@ -52,7 +52,17 @@ export const getAutomations = async (clerkId: string) => {
         },
         include: {
           keywords: true,
-          listener: true,
+          listener: {
+            select: {
+              id: true,
+              listener: true,
+              prompt: true,
+              commentReply: true,
+              dmCount: true,         // ✅ REQUIRED
+              commentCount: true,    // ✅ REQUIRED
+            }
+          },
+
         },
       },
     },
@@ -73,7 +83,16 @@ export const findAutomation = async (id: string) => {
       keywords: true,
       trigger: true,
       posts: true,
-      listener: true,
+      listener: {
+          select: {
+            id: true,
+            listener: true,
+            prompt: true,
+            commentReply: true,
+            dmCount: true,         // 🔥 REQUIRED
+            commentCount: true,    // 🔥 REQUIRED
+          }
+        },
       User: {
         select: {
           subscription: true,
