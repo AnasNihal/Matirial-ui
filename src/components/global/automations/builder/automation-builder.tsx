@@ -587,38 +587,48 @@ async function handleActivate() {
             </div>
           </div>
 
-          {/* PANELS */}
-          <div className="flex flex-col gap-4">
-            <PostPanel
-              id={id}
-              isActive={activeStep === 'post'}
-              onFocus={() => setActiveStep('post')}
-              selectedPost={previewPost}
-              setSelectedPost={setPreviewPost}
-            />
+{/* PANELS */}
+<div className="flex flex-col gap-4">
+  <PostPanel
+    id={id}
+    isActive={activeStep === 'post'}
+    onFocus={() => {
+      setActiveStep('post');
+      setPhonePreviewStep('post');
+    }}
+    selectedPost={previewPost}
+    setSelectedPost={setPreviewPost}
+  />
 
-            <KeywordPanel
-              id={id}
-              isActive={activeStep === 'keyword'}
-              onFocus={() => setActiveStep('keyword')}
-              keywordPreview={keyword}
-              setKeywordPreview={setKeyword}
-            />
+  <KeywordPanel
+    id={id}
+    isActive={activeStep === 'keyword'}
+    onFocus={() => {
+      setActiveStep('keyword');
+      setPhonePreviewStep('keyword');
+    }}
+    keywordPreview={keyword}
+    setKeywordPreview={setKeyword}
+  />
 
-            <DmPanel
-              id={id}
-              isActive={activeStep === 'dm'}
-              onFocus={() => setActiveStep('dm')}
-              dmPreview={dmText}
-              setDmPreview={setDmText}
-              dmEnabled={dmEnabled}
-              setDmEnabled={setDmEnabled}
-              dmImage={dmImage}
-              setDmImage={setDmImage}
-              dmLinks={dmLinks}
-              setDmLinks={setDmLinks}
-            />
-          </div>
+  <DmPanel
+    id={id}
+    isActive={activeStep === 'dm'}
+    onFocus={() => {
+      setActiveStep('dm');
+      setPhonePreviewStep('dm');
+    }}
+    dmPreview={dmText}
+    setDmPreview={setDmText}
+    dmEnabled={dmEnabled}
+    setDmEnabled={setDmEnabled}
+    dmImage={dmImage}
+    setDmImage={setDmImage}
+    dmLinks={dmLinks}
+    setDmLinks={setDmLinks}
+  />
+</div>
+
         </div>
       </div>
 
