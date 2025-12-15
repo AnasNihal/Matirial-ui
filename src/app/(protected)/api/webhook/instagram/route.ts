@@ -404,8 +404,15 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
 
       // ✅ 3. Track response
       console.log('🔵 [Webhook] Step 3: Tracking response...')
+
+      // count DM (private reply)
+      await trackResponses(automation.id, 'DM')
+      console.log('✅ [Webhook] DM incremented')
+
+      // count comment
       await trackResponses(automation.id, 'COMMENT')
-      console.log('✅ [Webhook] Response tracked')
+      console.log('✅ [Webhook] Comment incremented')
+
 
       return NextResponse.json(
         { message: 'Public + Private replies sent successfully' },
