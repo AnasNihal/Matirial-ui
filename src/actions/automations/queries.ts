@@ -48,11 +48,11 @@ export const getAutomations = async (clerkId: string) => {
     select: {
       automations: {
         orderBy: {
-          createdAt: 'desc', // ✅ Most recent first
+          createdAt: 'desc',
         },
         include: {
           keywords: true,
-          listener: true,
+          listener: true, // ✅ CRITICAL: Include listener to get dmCount and commentCount
         },
       },
     },

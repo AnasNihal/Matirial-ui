@@ -64,95 +64,61 @@ export const getAllAutomations = async () => {
       const automationsList = automations.automations || []
       console.log('🔍 [getAllAutomations] Automations list length:', automationsList.length)
       
-      // ✅ CRITICAL FIX: Manual serialization to ensure ONLY plain objects
-      // Prisma objects can have non-serializable properties, so we extract only what we need
+      // ✅ CRITICAL FIX: Use JSON.parse(JSON.stringify()) for clean serialization
       const serializedAutomations = automationsList.map((automation: any) => {
         try {
-          // Extract only primitive values from Prisma objects
-          const result: any = {
-            id: String(automation.id || ''),
-            name: String(automation.name || ''),
-            active: Boolean(automation.active ?? false),
-            createdAt: null as string | null,
-            updatedAt: null as string | null,
-            keywords: [] as any[],
-            listener: null as any,
+          console.log(`🔍 [getAllAutomations] Processing automation ${automation.id}:`, {
+            name: automation.name,
+            hasListener: !!automation.listener,
+            dmCount: automation.listener?.dmCount,
+            commentCount: automation.listener?.commentCount,
+          })
+
+          // Create plain object with only the data we need
+          const plainObject = {
+            id: automation.id,
+            name: automation.name,
+            active: automation.active,
+            createdAt: automation.createdAt ? new Date(automation.createdAt).toISOString() : null,
+            updatedAt: automation.updatedAt ? new Date(automation.updatedAt).toISOString() : null,
+            keywords: automation.keywords?.map((k: any) => ({
+              id: k.id,
+              word: k.word,
+              automationId: k.automationId,
+            })) || [],
+            listener: automation.listener ? {
+              id: automation.listener.id,
+              listener: automation.listener.listener,
+              dmCount: automation.listener.dmCount || 0,
+              commentCount: automation.listener.commentCount || 0,
+            } : null,
           }
           
-          // Handle dates safely
-          if (automation.createdAt) {
-            if (automation.createdAt instanceof Date) {
-              result.createdAt = automation.createdAt.toISOString()
-            } else {
-              try {
-                result.createdAt = new Date(automation.createdAt).toISOString()
-              } catch {
-                result.createdAt = null
-              }
-            }
-          }
+          // ✅ Force clean serialization by converting to JSON and back
+          const cleaned = JSON.parse(JSON.stringify(plainObject))
           
-          if (automation.updatedAt) {
-            if (automation.updatedAt instanceof Date) {
-              result.updatedAt = automation.updatedAt.toISOString()
-            } else {
-              try {
-                result.updatedAt = new Date(automation.updatedAt).toISOString()
-              } catch {
-                result.updatedAt = null
-              }
-            }
-          }
+          console.log(`✅ [getAllAutomations] Serialized automation ${automation.name}:`, {
+            dmCount: cleaned.listener?.dmCount,
+            commentCount: cleaned.listener?.commentCount,
+          })
           
-          // Handle keywords array - extract only primitive values
-          if (Array.isArray(automation.keywords)) {
-            result.keywords = automation.keywords.map((k: any) => {
-              if (!k || typeof k !== 'object') return null
-              return {
-                id: String(k.id || ''),
-                word: String(k.word || ''),
-                automationId: String(k.automationId || ''),
-              }
-            }).filter((k: any) => k !== null)
-          }
-          
-          // Handle listener - extract only primitive values
-          if (automation.listener && typeof automation.listener === 'object') {
-            result.listener = {
-              id: String(automation.listener.id || ''),
-              listener: String(automation.listener.listener || ''),
-            }
-          }
-          
-          return result
+          return cleaned
         } catch (itemError) {
           console.error('❌ [getAllAutomations] Error serializing automation item:', itemError)
-          console.error('❌ [getAllAutomations] Problematic automation:', {
-            id: automation?.id,
-            name: automation?.name,
-            hasKeywords: !!automation?.keywords,
-            hasListener: !!automation?.listener,
-          })
           return null
         }
-      }).filter((item: any) => item !== null) // Remove any failed serializations
+      }).filter((item: any) => item !== null)
       
       console.log('✅ [getAllAutomations] Returning', serializedAutomations.length, 'automations')
       
-      // ✅ OPTIMIZED: Single validation instead of double
-      try {
-        // ✅ Create the final result object
-        const finalResult = { status: 200, data: serializedAutomations }
-        
-        // ✅ Single validation check
-        JSON.stringify(finalResult)
-        console.log('✅ [getAllAutomations] Returning', serializedAutomations.length, 'automations')
-        
-        return finalResult
-      } catch (validateError) {
-        console.error('❌ [getAllAutomations] Serialization validation failed:', validateError)
-        return { status: 500, data: [] }
-      }
+      // Log summary of counts
+      const totalDMs = serializedAutomations.reduce((sum: number, auto: any) => sum + (auto.listener?.dmCount || 0), 0)
+      const totalComments = serializedAutomations.reduce((sum: number, auto: any) => sum + (auto.listener?.commentCount || 0), 0)
+      console.log('📊 [getAllAutomations] Total counts:', { totalDMs, totalComments })
+      
+      // ✅ Return directly without extra validation
+      console.log('✅ [getAllAutomations] Returning data to client')
+      return { status: 200, data: serializedAutomations }
     }
     
     console.log('⚠️ [getAllAutomations] No automations found')
@@ -272,7 +238,6 @@ export const getAutomationInfo = async (id: string) => {
       } : null,
     }
     
-    // ✅ OPTIMIZED: Return directly - Prisma handles serialization for Server Actions
     console.log('✅ [getAutomationInfo] Returning automation data')
     return { status: 200, data: serialized }
   } catch (error: any) {

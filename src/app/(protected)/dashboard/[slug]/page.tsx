@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useQueryAutomations, useQueryUser } from '@/hooks/user-queries'
 import { usePaths } from '@/hooks/user-nav'
 import Link from 'next/link'
@@ -28,25 +28,62 @@ import Image from 'next/image'
 type Props = {}
 
 const Page = (props: Props) => {
-  const { data: automationsData, isLoading: automationsLoading, isFetching: automationsFetching } = useQueryAutomations()
+  const { data: automationsData, isLoading: automationsLoading, isFetching: automationsFetching, refetch } = useQueryAutomations()
   const { data: userData, isLoading: userLoading, isFetching: userFetching } = useQueryUser()
   const paths = usePaths()
   const pathname = paths?.pathname || ''
+
+  // ✅ AUTO-REFRESH EVERY 10 SECONDS to get latest counts
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('🔄 [Dashboard] Auto-refreshing automation counts...')
+      refetch()
+    }, 10000) // 10 seconds
+
+    return () => clearInterval(interval)
+  }, [refetch])
 
   const automations = automationsData?.data || []
   const integrations = userData?.data?.integrations || []
   const hasIntegration = integrations.length > 0
   const hasAutomations = automations.length > 0
 
-  // Calculate statistics
-  const totalDMs = automations.reduce((sum: number, auto: any) => sum + (auto.listener?.dmCount || 0), 0)
-  const totalComments = automations.reduce((sum: number, auto: any) => sum + (auto.listener?.commentCount || 0), 0)
+  // ✅ DEBUG: Log raw automation data
+  console.log('🔍 [Dashboard] Raw automations data:', {
+    count: automations.length,
+    automations: automations.map((a: any) => ({
+      id: a.id,
+      name: a.name,
+      hasListener: !!a.listener,
+      listener: a.listener,
+    }))
+  })
+
+  // ✅ FIXED: Calculate statistics with proper null checks
+  const totalDMs = automations.reduce((sum: number, auto: any) => {
+    const dmCount = auto.listener?.dmCount || 0
+    console.log(`[Dashboard] Automation ${auto.name}: DM Count = ${dmCount}`)
+    return sum + dmCount
+  }, 0)
+  
+  const totalComments = automations.reduce((sum: number, auto: any) => {
+    const commentCount = auto.listener?.commentCount || 0
+    console.log(`[Dashboard] Automation ${auto.name}: Comment Count = ${commentCount}`)
+    return sum + commentCount
+  }, 0)
+  
   const activeAutomations = automations.filter((auto: any) => auto.active).length
-  const engagementGrowth = totalDMs > 0 ? Math.round((totalDMs / (totalComments || 1)) * 100) : 0
+  const engagementGrowth = totalComments > 0 ? Math.round((totalDMs / totalComments) * 100) : 0
+
+  console.log('📊 [Dashboard] Stats:', {
+    totalDMs,
+    totalComments,
+    activeAutomations,
+    engagementGrowth,
+    automationsCount: automations.length,
+  })
 
   // Check if new user (no integration or no automations)
-  // ✅ OPTIMIZED: Show cached data immediately, only wait for true initial load
-  // Show loading ONLY if no cached data exists AND actually loading
   const hasCachedAutomations = !!automationsData?.data
   const hasCachedUser = !!userData?.data
   const isStillLoading = (!hasCachedAutomations && automationsLoading) || (!hasCachedUser && userLoading)
@@ -60,8 +97,6 @@ const Page = (props: Props) => {
   // Get alerts (automations with errors or paused)
   const alerts = automations.filter((auto: any) => !auto.active && hasAutomations)
 
-  // ✅ Show loading state ONLY if no cached data AND actually loading
-  // This allows cached data to show immediately while fresh data loads in background
   if (isStillLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">
@@ -138,6 +173,14 @@ const Page = (props: Props) => {
 
   return (
     <div className="flex flex-col gap-8">
+      {/* ✅ FIXED: Show loading indicator when fetching new data */}
+      {automationsFetching && !automationsLoading && (
+        <div className="fixed top-20 right-4 bg-blue-500/10 border border-blue-500/30 text-blue-400 px-4 py-2 rounded-lg text-sm flex items-center gap-2 z-50">
+          <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+          Refreshing stats...
+        </div>
+      )}
+
       {/* Quick Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -147,6 +190,7 @@ const Page = (props: Props) => {
           trend="+14%"
           trendUp={true}
           color="blue"
+          isLoading={automationsFetching}
         />
         <StatCard
           icon={MessageCircle}
@@ -155,6 +199,7 @@ const Page = (props: Props) => {
           trend="+8%"
           trendUp={true}
           color="green"
+          isLoading={automationsFetching}
         />
         <StatCard
           icon={Zap}
@@ -163,6 +208,7 @@ const Page = (props: Props) => {
           trend={`${automations.length} total`}
           trendUp={null}
           color="purple"
+          isLoading={automationsFetching}
         />
         <StatCard
           icon={TrendingUp}
@@ -171,6 +217,7 @@ const Page = (props: Props) => {
           trend="This month"
           trendUp={true}
           color="orange"
+          isLoading={automationsFetching}
         />
       </div>
 
@@ -185,7 +232,6 @@ const Page = (props: Props) => {
                 Manage and monitor your automation workflows
               </p>
             </div>
-            {/* Only show Create Automation button if user has no automations */}
             {automations.length === 0 && !automationsLoading && <CreateAutomation />}
           </div>
 
@@ -331,14 +377,15 @@ const Page = (props: Props) => {
   )
 }
 
-// Stat Card Component
+// ✅ FIXED: Added loading state to StatCard
 const StatCard = ({ 
   icon: Icon, 
   label, 
   value, 
   trend, 
   trendUp, 
-  color 
+  color,
+  isLoading 
 }: { 
   icon: any
   label: string
@@ -346,6 +393,7 @@ const StatCard = ({
   trend: string
   trendUp: boolean | null
   color: 'blue' | 'green' | 'purple' | 'orange'
+  isLoading?: boolean
 }) => {
   const colorClasses = {
     blue: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
@@ -355,7 +403,10 @@ const StatCard = ({
   }
 
   return (
-    <div className="bg-app-card-bg border border-app-border rounded-xl p-6 hover:border-app-border-secondary transition-colors">
+    <div className={cn(
+      "bg-app-card-bg border border-app-border rounded-xl p-6 hover:border-app-border-secondary transition-colors",
+      isLoading && "animate-pulse"
+    )}>
       <div className="flex items-start justify-between mb-4">
         <div className={cn('w-12 h-12 rounded-lg flex items-center justify-center border', colorClasses[color])}>
           <Icon className="w-6 h-6" />

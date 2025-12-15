@@ -6,7 +6,7 @@ import {
 import { onUserInfo } from '@/actions/user'
 import { useQuery } from '@tanstack/react-query'
 
-// 🚀 INSTANT LOAD: Show cached data immediately, refetch in background
+// ✅ FIXED: Proper caching with real-time updates
 export const useQueryAutomations = () => {
   return useQuery({
     queryKey: ['user-automations'],
@@ -20,7 +20,17 @@ export const useQueryAutomations = () => {
           hasResult: !!result,
           resultType: typeof result,
           resultKeys: result ? Object.keys(result) : [],
-  })
+          rawData: result?.data,
+          firstAutomation: result?.data?.[0] ? {
+            name: result.data[0].name,
+            hasListener: !!result.data[0].listener,
+            listener: result.data[0].listener,
+            dmCount: result.data[0].listener?.dmCount,
+            commentCount: result.data[0].listener?.commentCount,
+          } : null,
+        })
+        
+        console.log('🔍 [useQueryAutomations] Full result object:', JSON.stringify(result, null, 2))
         
         // ✅ Ensure we return the result properly
         if (!result) {
@@ -34,9 +44,13 @@ export const useQueryAutomations = () => {
             console.log('✅ [useQueryAutomations] Valid result structure, returning:', {
               status: result.status,
               dataLength: result.data.length,
-              firstItem: result.data[0] ? { id: result.data[0].id, name: result.data[0].name } : null,
+              firstItem: result.data[0] ? { 
+                id: result.data[0].id, 
+                name: result.data[0].name,
+                listener: result.data[0].listener,
+              } : null,
             })
-            // ✅ CRITICAL: Return the result as-is (React Query will handle it)
+            // ✅ CRITICAL: Return the result as-is
             return result
           } else {
             console.warn('⚠️ [useQueryAutomations] Unexpected status or data type:', {
@@ -54,7 +68,7 @@ export const useQueryAutomations = () => {
           })
         }
         
-        // ✅ Always return something, even if invalid
+        // ✅ Always return something
         return result || { status: 500, data: [] }
       } catch (error: any) {
         console.error('❌ [useQueryAutomations] Error calling getAllAutomations:', error)
@@ -63,24 +77,21 @@ export const useQueryAutomations = () => {
           stack: error?.stack,
           name: error?.name,
         })
-        // Return error response instead of throwing
         return { status: 500, data: [], error: error?.message || 'Unknown error' }
       }
     },
-    staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes
-    gcTime: Infinity, // 🔥 NEVER garbage collect
-    refetchOnMount: false, // ✅ Use cache first - don't refetch unnecessarily
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    retry: 1, // ✅ Retry once on failure
-    // 🔥 Show cached data instantly while fetching in background
-    placeholderData: (previousData) => previousData,
-    // ✅ Better performance with online mode
-    networkMode: 'online',
+    // ✅ FIXED: Allow refetch but keep data fresh
+    staleTime: 5000, // Consider data stale after 5 seconds (allows polling to work)
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    refetchOnMount: true, // ✅ CRITICAL: Always fetch on mount to get latest data
+    refetchOnWindowFocus: true, // ✅ Refetch when user returns to tab
+    refetchOnReconnect: true, // ✅ Refetch when internet reconnects
+    retry: 1,
+    // ✅ REMOVED placeholderData - it was showing stale empty data
   })
 }
 
-// 🚀 INSTANT LOAD: Automation details appear instantly
+// Automation details
 export const useQueryAutomation = (id: string) => {
   return useQuery({
     queryKey: ['automation-info', id],
@@ -91,27 +102,23 @@ export const useQueryAutomation = (id: string) => {
         console.log('🔍 [useQueryAutomation] Result received:', {
           status: result?.status,
           hasData: !!result?.data,
-  })
+        })
         return result
       } catch (error) {
         console.error('❌ [useQueryAutomation] Error:', error)
         throw error
       }
     },
-    staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes
-    gcTime: Infinity, // 🔥 KEEP FOREVER
+    staleTime: 10000, // 10 seconds
+    gcTime: 30 * 60 * 1000,
     enabled: !!id,
-    refetchOnMount: false, // ✅ Use cache first - don't refetch unnecessarily
-    refetchOnWindowFocus: false,
-    retry: 1, // ✅ Retry once on failure
-    // 🔥 Show cached data instantly while fetching in background
-    placeholderData: (previousData) => previousData,
-    // ✅ Better performance with online mode
-    networkMode: 'online',
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 1,
   })
 }
 
-// 🚀 INSTANT LOAD: User profile cached forever
+// User profile
 export const useQueryUser = () => {
   return useQuery({
     queryKey: ['user-profile'],
@@ -123,14 +130,13 @@ export const useQueryUser = () => {
           status: result?.status,
           hasData: !!result?.data,
           hasIntegrations: !!result?.data?.integrations,
-  })
+        })
         
-        // ✅ Handle 404 as valid response (user not found in DB yet)
+        // ✅ Handle 404 as valid response
         if (result?.status === 404 || result?.status === 200) {
           return result
         }
         
-        // ✅ For other errors, return error response
         if (result?.status && result.status >= 400) {
           console.warn('⚠️ [useQueryUser] Error status:', result.status)
           return result
@@ -139,27 +145,18 @@ export const useQueryUser = () => {
         return result
       } catch (error: any) {
         console.error('❌ [useQueryUser] Error:', error)
-        console.error('❌ [useQueryUser] Error details:', {
-          message: error?.message,
-          stack: error?.stack,
-        })
-        // ✅ Return error response instead of throwing
         return { status: 500, data: null, error: error?.message }
       }
     },
-    staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes
-    gcTime: Infinity,
-    refetchOnMount: false, // ✅ Use cache first - don't refetch unnecessarily
-    refetchOnWindowFocus: false,
-    retry: 1, // ✅ Retry once on failure
-    // 🔥 Show cached data instantly while fetching in background
-    placeholderData: (previousData) => previousData,
-    // ✅ Better performance with online mode
-    networkMode: 'online',
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    retry: 1,
   })
 }
 
-// 🚀 INSTANT LOAD: Instagram posts cached aggressively - LAZY LOAD (non-blocking)
+// Instagram posts
 export const useQueryAutomationPosts = () => {
   return useQuery({
     queryKey: ['instagram-media'],
@@ -178,16 +175,10 @@ export const useQueryAutomationPosts = () => {
         throw error
       }
     },
-    staleTime: 30 * 60 * 1000, // 🔥 Keep fresh for 30 minutes (not Infinity - posts can change)
-    gcTime: Infinity, // 🔥 KEEP FOREVER
-    refetchOnMount: false, // ✅ Use cached data first, don't block page load
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 30 * 60 * 1000,
+    refetchOnMount: false, // Posts don't change often
     refetchOnWindowFocus: false,
-    retry: 1, // ✅ Retry once on failure
-    // 🔥 Show cached data instantly while fetching in background
-    placeholderData: (previousData) => previousData,
-    // ✅ Don't block page load - fetch in background if cache exists
-    networkMode: 'offlineFirst', // Use cache first, then network
+    retry: 1,
   })
 }
-
-
