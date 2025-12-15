@@ -338,6 +338,9 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
       try {
         await sendPublicReplyToComment(commentId, publicReply, token)
         console.log('✅ [Webhook] Public reply sent successfully')
+        await trackResponses(automation.id, "COMMENT")
+        console.log("📈 Comment count updated")
+
       } catch (publicError: any) {
         console.error('❌ [Webhook] Failed to send public reply:', {
           error: publicError.response?.data || publicError.message,
@@ -383,6 +386,11 @@ async function handleCommentEvent(entry: any, webhook_payload: any) {
             error: result.error,
             note: 'Only ONE message was sent (image + text + buttons combined)',
           })
+          if (result?.success) {
+            await trackResponses(automation.id, "DM")
+            console.log("📈 DM count updated (comment automation)")
+          }
+
           
           if (!result.success) {
             console.error('⚠️ [Webhook] Private DM returned but success=false:', result)
