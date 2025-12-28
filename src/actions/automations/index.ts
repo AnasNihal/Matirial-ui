@@ -200,7 +200,7 @@ export const getAutomationInfo = async (id: string) => {
         commentReply: automation.listener.commentReply ? String(automation.listener.commentReply) : null,
         dmCount: Number(automation.listener.dmCount || 0),
         commentCount: Number(automation.listener.commentCount || 0),
-        automationId: String(automation.listener.automationId || ''),
+        automationId: String(automation.listener.id),
         // Parse DM image and links from commentReply if it's JSON
         dmImage: (() => {
           if (!automation.listener.commentReply) return null
