@@ -1,0 +1,232 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Mode - White Background with Blue Accents */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 224.3 76.3% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 224.3 76.3% 48%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 224.3 76.3% 48%;
+    --radius: 0.5rem;
+    --chart-1: 224.3 76.3% 48%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 240 5.9% 90%;
+    --sidebar-ring: 224.3 76.3% 48%;
+    --page-background: #ffffff;
+
+    /* Custom App Colors - Light Mode */
+    --app-bg-primary: #ffffff;
+    --app-bg-secondary: #f5f5f5;
+    --app-bg-tertiary: #e5e5e5;
+    --app-card-bg: #ffffff;
+    --app-card-border: #e0e0e0;
+    --app-text-primary: #1a1a1a;
+    --app-text-secondary: #6b6b6b;
+    --app-text-tertiary: #9b9ca0;
+    --app-border: #e0e0e0;
+    --app-border-secondary: #d0d0d0;
+    --app-blue: #3352CC;
+    --app-blue-light: #4a6ae8;
+    --app-blue-dark: #2a42a8;
+    --app-gradient-start: #768BDD;
+    --app-gradient-end: #ffffff;
+    --app-gradient-mid: #f0f0f0;
+    --phone-shadow: 0 0 28px rgba(0,0,0,0.15), inset 0 0 4px rgba(255,255,255,0.1), 0 0 0 1px rgba(0,0,0,0.1);
+
+    /* Scrollbar - Light Mode */
+    --scrollbar-track: transparent;
+    --scrollbar-thumb: #c0c0c0;
+    --scrollbar-thumb-hover: #a0a0a0;
+    --scrollbar-width: 12px;
+  }
+
+  .dark {
+    /* Dark Mode - Black Background with Blue Accents */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 224.3 76.3% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 224.3 76.3% 48%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 224.3 76.3% 48%;
+    --chart-1: 224.3 76.3% 48%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 224.3 76.3% 48%;
+    --page-background: #09090b;
+
+    /* Custom App Colors - Dark Mode */
+    --app-bg-primary: #0e0e0e;
+    --app-bg-secondary: #1a1a1a;
+    --app-bg-tertiary: #252525;
+    --app-card-bg: #1d1d1d;
+    --app-card-border: #333333;
+    --app-text-primary: #ffffff;
+    --app-text-secondary: #9b9ca0;
+    --app-text-tertiary: #6b6b6b;
+    --app-border: #333333;
+    --app-border-secondary: #545454;
+    --app-blue: #3352CC;
+    --app-blue-light: #4a6ae8;
+    --app-blue-dark: #2a42a8;
+    --app-gradient-start: #768BDD;
+    --app-gradient-end: #171717;
+    --app-gradient-mid: #0e0e0e;
+    --phone-shadow: 0 0 28px rgba(0,0,0,0.95), inset 0 0 4px rgba(255,255,255,0.06), 0 0 0 1px rgba(255,255,255,0.05);
+
+    /* Scrollbar - Dark Mode */
+    --scrollbar-track: transparent;
+    --scrollbar-thumb: #545454;
+    --scrollbar-thumb-hover: #5c5c5f;
+    --scrollbar-width: 12px;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  :root body {
+    background-image: 
+      radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  
+  .dark body {
+    background-image: 
+      radial-gradient(circle, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+}
+
+.backdrop--blur__safari {
+  -webkit-backdrop-filter: blur(5px);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin; /* none | auto  */
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+/* Firefox */
+
+/* Chrome, Edge, Safari */
+*::-webkit-scrollbar {
+  width: var(--scrollbar-width); /* vertical scrollbar */
+  height: var(--scrollbar-width); /* horizontal scrollbar */
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-width);
+  border: calc(var(--scrollbar-width) / 4) solid var(--page-background);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+.radial--gradient {
+  background-image: radial-gradient(
+    ellipse farthest-side,
+    rgba(51, 82, 204, 0.15) 20%,
+    var(--app-bg-primary) 100%
+  );
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.radial--gradient--pink {
+  background-image: radial-gradient(
+    at center,
+    rgba(148, 52, 230, 0.1) 10%,
+    transparent 50%
+  );
+  background-size: 70% 80%;
+  background-repeat: no-repeat;
+}
+
+.radial--gradient--automations {
+  background-image: radial-gradient(
+    at top left,
+    rgba(51, 82, 204, 0.05) 40%,
+    var(--app-card-bg) 60%
+  );
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+}
+
+.radial--double--gradient--cards--top {
+  background-image: radial-gradient(
+    at top left,
+    rgba(51, 82, 204, 0.3) 50%,
+    transparent 70%
+  );
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.radial--double--gradient--cards--bottom {
+  background-image: radial-gradient(
+    at bottom right,
+    rgba(51, 82, 204, 0.1) 50%,
+    transparent 70%
+  );
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}

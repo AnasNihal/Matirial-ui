@@ -1,0 +1,572 @@
+'use server'
+
+import { refreshToken } from '@/lib/fetch'
+import { onCurrentUser } from '../user'
+import { findUser } from '../user/queries'
+import {
+  addKeyWord,
+  addListener,
+  addPost,
+  addTrigger,
+  createAutomation,
+  deleteKeywordQuery,
+  findAutomation,
+  getAutomations,
+  updateAutomation,
+} from './queries'
+import { client } from '@/lib/prisma'
+
+export const createAutomations = async (id?: string) => {
+  const user = await onCurrentUser()
+  try {
+    const create = await createAutomation(user.id, id)
+    if (create) return { status: 200, data: 'Automation created', res: create }
+
+    return { status: 404, data: 'Oops! something went wrong' }
+  } catch (error) {
+    return { status: 500, data: 'Internal server error' }
+  }
+}
+
+export const getAllAutomations = async () => {
+  try {
+    console.log('🔍 [getAllAutomations] Starting...')
+    
+    let user
+    try {
+      user = await onCurrentUser()
+      console.log('🔍 [getAllAutomations] User:', user?.id)
+    } catch (userError) {
+      console.error('❌ [getAllAutomations] User fetch error:', userError)
+      return { status: 401, data: [] }
+    }
+    
+    if (!user || !user.id) {
+      console.error('❌ [getAllAutomations] No user')
+      return { status: 401, data: [] }
+    }
+    
+    console.log('🔍 [getAllAutomations] Fetching from database...')
+    let automations
+    try {
+      automations = await getAutomations(user.id)
+      console.log('🔍 [getAllAutomations] Database result:', {
+        hasAutomations: !!automations,
+        automationsCount: automations?.automations?.length,
+      })
+    } catch (dbError) {
+      console.error('❌ [getAllAutomations] Database error:', dbError)
+      return { status: 500, data: [] }
+    }
+    
+    // ✅ Handle case where user exists but has no automations
+    if (automations && automations.automations) {
+      const automationsList = automations.automations || []
+      console.log('🔍 [getAllAutomations] Automations list length:', automationsList.length)
+      
+      // ✅ CRITICAL FIX: Use JSON.parse(JSON.stringify()) for clean serialization
+      const serializedAutomations = automationsList.map((automation: any) => {
+        try {
+          console.log(`🔍 [getAllAutomations] Processing automation ${automation.id}:`, {
+            name: automation.name,
+            hasListener: !!automation.listener,
+            dmCount: automation.listener?.dmCount,
+            commentCount: automation.listener?.commentCount,
+          })
+
+          // Create plain object with only the data we need
+          const plainObject = {
+            id: automation.id,
+            name: automation.name,
+            active: automation.active,
+            createdAt: automation.createdAt ? new Date(automation.createdAt).toISOString() : null,
+            updatedAt: automation.updatedAt ? new Date(automation.updatedAt).toISOString() : null,
+            keywords: automation.keywords?.map((k: any) => ({
+              id: k.id,
+              word: k.word,
+              automationId: k.automationId,
+            })) || [],
+            listener: automation.listener ? {
+              id: automation.listener.id,
+              listener: automation.listener.listener,
+              dmCount: automation.listener.dmCount || 0,
+              commentCount: automation.listener.commentCount || 0,
+            } : null,
+          }
+          
+          // ✅ Force clean serialization by converting to JSON and back
+          const cleaned = JSON.parse(JSON.stringify(plainObject))
+          
+          console.log(`✅ [getAllAutomations] Serialized automation ${automation.name}:`, {
+            dmCount: cleaned.listener?.dmCount,
+            commentCount: cleaned.listener?.commentCount,
+          })
+          
+          return cleaned
+        } catch (itemError) {
+          console.error('❌ [getAllAutomations] Error serializing automation item:', itemError)
+          return null
+        }
+      }).filter((item: any) => item !== null)
+      
+      console.log('✅ [getAllAutomations] Returning', serializedAutomations.length, 'automations')
+      
+      // Log summary of counts
+      const totalDMs = serializedAutomations.reduce((sum: number, auto: any) => sum + (auto.listener?.dmCount || 0), 0)
+      const totalComments = serializedAutomations.reduce((sum: number, auto: any) => sum + (auto.listener?.commentCount || 0), 0)
+      console.log('📊 [getAllAutomations] Total counts:', { totalDMs, totalComments })
+      
+      // ✅ Return directly without extra validation
+      console.log('✅ [getAllAutomations] Returning data to client')
+      return { status: 200, data: serializedAutomations }
+    }
+    
+    console.log('⚠️ [getAllAutomations] No automations found')
+    return { status: 200, data: [] }
+  } catch (error: any) {
+    console.error('❌ [getAllAutomations] FATAL ERROR:', error)
+    console.error('❌ [getAllAutomations] Error stack:', error?.stack)
+    console.error('❌ [getAllAutomations] Error message:', error?.message)
+    return { status: 500, data: [] }
+  }
+}
+
+export const getAutomationInfo = async (id: string) => {
+  console.log('🔍 [getAutomationInfo] Starting for id:', id)
+  
+  // Validate UUID format before querying
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(id)) {
+    console.error('❌ [getAutomationInfo] Invalid automation ID format:', id)
+    return {
+      status: 400,
+      data: null,
+      error: `Invalid automation ID format: ${id}. Expected UUID format.`,
+    }
+  }
+  
+  try {
+    await onCurrentUser()
+    
+    const automation = await findAutomation(id)
+    console.log('🔍 [getAutomationInfo] Database result:', {
+      hasAutomation: !!automation,
+      hasKeywords: !!automation?.keywords,
+      hasPosts: !!automation?.posts,
+      hasListener: !!automation?.listener,
+    })
+    
+    if (!automation) {
+      console.warn('⚠️ [getAutomationInfo] Automation not found')
+      return { status: 404, data: null }
+    }
+    
+    // ✅ CRITICAL FIX: Serialize Prisma objects to plain objects
+    const serialized = {
+      id: String(automation.id || ''),
+      name: String(automation.name || ''),
+      active: Boolean(automation.active ?? false),
+      createdAt: automation.createdAt instanceof Date 
+        ? automation.createdAt.toISOString() 
+        : (automation.createdAt ? new Date(automation.createdAt).toISOString() : null),
+      keywords: Array.isArray(automation.keywords) 
+        ? automation.keywords.map((k: any) => ({
+            id: String(k.id || ''),
+            word: String(k.word || ''),
+            automationId: String(k.automationId || ''),
+          }))
+        : [],
+      trigger: Array.isArray(automation.trigger) 
+        ? automation.trigger.map((t: any) => ({
+            id: String(t.id || ''),
+            type: String(t.type || ''),
+            automationId: String(t.automationId || ''),
+          }))
+        : [],
+      posts: Array.isArray(automation.posts) 
+        ? automation.posts.map((p: any) => ({
+            id: String(p.id || ''),
+            postid: String(p.postid || ''),
+            media: String(p.media || ''),
+            caption: p.caption ? String(p.caption) : null,
+            mediaType: String(p.mediaType || 'IMAGE'),
+            automationId: String(p.automationId || ''),
+          }))
+        : [],
+      listener: automation.listener ? {
+        id: String(automation.listener.id || ''),
+        listener: String(automation.listener.listener || ''),
+        prompt: String(automation.listener.prompt || ''),
+        commentReply: automation.listener.commentReply ? String(automation.listener.commentReply) : null,
+        dmCount: Number(automation.listener.dmCount || 0),
+        commentCount: Number(automation.listener.commentCount || 0),
+        automationId: String(automation.listener.id),
+        // Parse DM image and links from commentReply if it's JSON
+        dmImage: (() => {
+          if (!automation.listener.commentReply) return null
+          try {
+            const parsed = JSON.parse(automation.listener.commentReply)
+            return parsed.dmImage || null
+          } catch {
+            return null
+          }
+        })(),
+        dmLinks: (() => {
+          if (!automation.listener.commentReply) return []
+          try {
+            const parsed = JSON.parse(automation.listener.commentReply)
+            return Array.isArray(parsed.dmLinks) ? parsed.dmLinks : []
+          } catch {
+          return []
+        }
+      })(),
+      } : null,
+      User: automation.User ? {
+        subscription: automation.User.subscription ? {
+          id: String(automation.User.subscription.id || ''),
+          plan: String(automation.User.subscription.plan || ''),
+        } : null,
+        integrations: Array.isArray(automation.User.integrations) 
+          ? automation.User.integrations.map((i: any) => ({
+              id: String(i.id || ''),
+              token: String(i.token || ''),
+              instagramId: i.instagramId ? String(i.instagramId) : null,
+              instagramUsername: i.instagramUsername ? String(i.instagramUsername) : null,
+              instagramProfilePicture: i.instagramProfilePicture ? String(i.instagramProfilePicture) : null,
+            }))
+          : [],
+      } : null,
+    }
+    
+    console.log('✅ [getAutomationInfo] Returning automation data')
+    return { status: 200, data: serialized }
+  } catch (error: any) {
+    console.error('❌ [getAutomationInfo] ERROR:', error)
+    console.error('❌ [getAutomationInfo] Error stack:', error?.stack)
+    return { status: 500, data: null }
+  }
+}
+
+export const updateAutomationName = async (
+  automationId: string,
+  data: {
+    name?: string
+    active?: boolean
+    automation?: string
+  }
+) => {
+  console.log('🔍 [updateAutomationName] Starting for automationId:', automationId, 'data:', data)
+  await onCurrentUser()
+  try {
+    const update = await updateAutomation(automationId, data)
+    console.log('🔍 [updateAutomationName] Update result:', !!update)
+    if (update) {
+      console.log('✅ [updateAutomationName] Success')
+      return { status: 200, data: 'Automation successfully updated' }
+    }
+    console.warn('⚠️ [updateAutomationName] Automation not found')
+    return { status: 404, data: 'Oops! could not find automation' }
+  } catch (error: any) {
+    console.error('❌ [updateAutomationName] ERROR:', error)
+    console.error('❌ [updateAutomationName] Error details:', { message: error?.message, stack: error?.stack })
+    return { status: 500, data: 'Oops! something went wrong' }
+  }
+}
+
+export const saveListener = async (
+  autmationId: string,
+  listener: 'SMARTAI' | 'MESSAGE',
+  prompt: string,
+  reply?: string,
+  dmImage?: string | null,
+  dmLinks?: Array<{ title: string; url: string }>
+) => {
+  console.log('🔍 [saveListener] Starting:', {
+    automationId: autmationId,
+    listener,
+    promptLength: prompt?.length || 0,
+    hasReply: !!reply,
+    hasImage: !!dmImage,
+    imageType: dmImage ? (dmImage.startsWith('data:') ? 'base64' : dmImage.startsWith('http') ? 'url' : 'unknown') : 'none',
+    linksCount: dmLinks?.length || 0,
+  })
+  await onCurrentUser()
+  try {
+    const create = await addListener(autmationId, listener, prompt, reply, dmImage, dmLinks)
+    console.log('✅ [saveListener] Successfully saved to database')
+    return { status: 200, data: 'Listener created' }
+  } catch (error: any) {
+    console.error('❌ [saveListener] ERROR:', error)
+    console.error('❌ [saveListener] Error details:', { message: error?.message, stack: error?.stack })
+    return { status: 500, data: error?.message || 'Oops! something went wrong' }
+  }
+}
+
+export const saveTrigger = async (automationId: string, trigger: string[]) => {
+  console.log('🔍 [saveTrigger] Starting for automationId:', automationId, 'trigger:', trigger)
+  await onCurrentUser()
+  try {
+    const create = await addTrigger(automationId, trigger)
+    console.log('🔍 [saveTrigger] Create result:', !!create)
+    if (create) {
+      console.log('✅ [saveTrigger] Success')
+      return { status: 200, data: 'Trigger saved' }
+    }
+    console.warn('⚠️ [saveTrigger] Failed to create trigger')
+    return { status: 404, data: 'Cannot save trigger' }
+  } catch (error: any) {
+    console.error('❌ [saveTrigger] ERROR:', error)
+    console.error('❌ [saveTrigger] Error details:', { message: error?.message, stack: error?.stack })
+    return { status: 500, data: 'Oops! something went wrong' }
+  }
+}
+
+export const saveKeyword = async (automationId: string, keyword: string) => {
+  console.log('🔍 [saveKeyword] Starting for automationId:', automationId, 'keyword:', keyword)
+  await onCurrentUser()
+  try {
+    const create = await addKeyWord(automationId, keyword)
+    console.log('🔍 [saveKeyword] Create result:', !!create)
+
+    if (create) {
+      console.log('✅ [saveKeyword] Success')
+      return { status: 200, data: 'Keyword added successfully' }
+    }
+    console.warn('⚠️ [saveKeyword] Failed to create keyword')
+    return { status: 404, data: 'Cannot add this keyword' }
+  } catch (error: any) {
+    console.error('❌ [saveKeyword] ERROR:', error)
+    console.error('❌ [saveKeyword] Error details:', { message: error?.message, stack: error?.stack })
+    return { status: 500, data: 'Oops! something went wrong' }
+  }
+}
+
+export const deleteKeyword = async (id: string) => {
+  await onCurrentUser()
+  try {
+    const deleted = await deleteKeywordQuery(id)
+    if (deleted)
+      return {
+        status: 200,
+        data: 'Keyword deleted',
+      }
+    return { status: 404, data: 'Keyword not found' }
+  } catch (error) {
+    return { status: 500, data: 'Oops! something went wrong' }
+  }
+}
+
+export const getProfilePosts = async () => {
+  try {
+    console.log('🔍 [getProfilePosts] Starting...')
+    const user = await onCurrentUser()
+    console.log('🔍 [getProfilePosts] User ID:', user?.id)
+
+    const profile = await findUser(user.id)
+    console.log('🔍 [getProfilePosts] Profile found:', !!profile, 'hasIntegrations:', !!profile?.integrations)
+    console.log('🔍 [getProfilePosts] Integrations array:', {
+      isArray: Array.isArray(profile?.integrations),
+      length: profile?.integrations?.length || 0,
+      firstIntegration: profile?.integrations?.[0] ? {
+        id: profile.integrations[0].id,
+        hasToken: !!profile.integrations[0].token,
+        tokenLength: profile.integrations[0].token?.length || 0,
+      } : null,
+    })
+
+    const integration = profile?.integrations?.[0]
+    console.log('🔍 [getProfilePosts] Integration found:', !!integration, 'hasToken:', !!integration?.token)
+    
+    // ✅ Check if there's NO integration at all (not just missing token)
+    if (!profile?.integrations || profile.integrations.length === 0 || !integration) {
+      console.warn('⚠️ [getProfilePosts] No integration found')
+      return { 
+        status: 403, 
+        data: { data: [] },
+        error: 'NO_INTEGRATION'
+      }
+    }
+    
+    // ✅ Check if integration exists but token is missing
+    if (!integration.token) {
+      console.warn('⚠️ [getProfilePosts] Integration exists but token is missing')
+      return { 
+        status: 403, 
+        data: { data: [] },
+        error: 'INTEGRATION_PERMISSION_REMOVED',
+        instagramUsername: integration.instagramUsername || null
+      }
+    }
+
+    let token = integration.token
+
+    // ✅ 1) PRE-EMPTIVE REFRESH IF EXPIRING SOON
+    if (integration.expiresAt) {
+      const expiresAt = new Date(integration.expiresAt)
+      const now = new Date()
+      const diffMs = expiresAt.getTime() - now.getTime()
+
+      // e.g. if less than 5 days left, refresh now
+      const FIVE_DAYS = 5 * 24 * 60 * 60 * 1000
+
+      if (diffMs > 0 && diffMs < FIVE_DAYS) {
+        console.log('🔁 Pre-emptive IG token refresh (expires soon)...')
+        try {
+          const newTokenData = await refreshToken(token)
+
+          if (newTokenData?.access_token) {
+            token = newTokenData.access_token
+
+            const expiresInSec =
+              typeof newTokenData.expires_in === 'number'
+                ? newTokenData.expires_in
+                : 60 * 24 * 60 * 60 // fallback 60 days
+
+            await client.integrations.update({
+              where: { id: integration.id },
+              data: {
+                token,
+                expiresAt: new Date(Date.now() + expiresInSec * 1000),
+              },
+            })
+
+            console.log('✅ Token refreshed before expiry')
+          }
+        } catch (e) {
+          console.log('❌ Failed pre-emptive IG refresh:', e)
+          // continue with old token, IG will respond if invalid
+        }
+      }
+    }
+
+    // ✅ 2) TRY FETCHING MEDIA WITH CURRENT / REFRESHED TOKEN
+    // Include all media types: images, videos (reels), and carousels
+    let response = await fetch(
+      `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp,thumbnail_url&limit=50&access_token=${token}`,
+      { cache: 'no-store' }
+    )
+
+    let parsed = await response.json()
+
+    // ✅ 3) IF IG SAYS TOKEN EXPIRED (code 190) → REFRESH & RETRY ONCE
+    if (parsed?.error?.code === 190) {
+      console.log('🔁 Token expired, refreshing & retrying...')
+
+      try {
+        const newTokenData = await refreshToken(token)
+        if (!newTokenData?.access_token) {
+          console.log('❌ Refresh response missing access_token')
+          return { status: 401, data: [] }
+        }
+
+        token = newTokenData.access_token
+
+        const expiresInSec =
+          typeof newTokenData.expires_in === 'number'
+            ? newTokenData.expires_in
+            : 60 * 24 * 60 * 60 // fallback 60 days
+
+        await client.integrations.update({
+          where: { id: integration.id },
+          data: {
+            token,
+            expiresAt: new Date(Date.now() + expiresInSec * 1000),
+          },
+        })
+
+        const retry = await fetch(
+          `${process.env.INSTAGRAM_BASE_URL}/me/media?fields=id,caption,media_url,media_type,timestamp,thumbnail_url&limit=50&access_token=${token}`,
+          { cache: 'no-store' }
+        )
+
+        parsed = await retry.json()
+        console.log('🔍 [getProfilePosts] Retry response:', { hasData: !!parsed?.data, dataLength: parsed?.data?.length, hasError: !!parsed?.error })
+      } catch (e: any) {
+        console.error('❌ [getProfilePosts] ERROR refreshing expired IG token:', e)
+        console.error('❌ [getProfilePosts] Refresh error details:', { message: e?.message, stack: e?.stack })
+        return { status: 401, data: { data: [] } }
+      }
+    }
+
+    // ✅ 4) NORMAL RETURN
+    console.log('🔍 [getProfilePosts] Parsed response:', {
+      hasData: !!parsed?.data,
+      dataLength: parsed?.data?.length,
+      hasError: !!parsed?.error,
+      errorCode: parsed?.error?.code,
+      errorMessage: parsed?.error?.message,
+    })
+    
+    if (parsed?.error) {
+      console.error('❌ [getProfilePosts] Instagram API error:', parsed.error)
+      return { status: 401, data: { data: [] } }
+    }
+    
+    if (parsed?.data?.length > 0) {
+      // Log media types for debugging
+      const mediaTypes = parsed.data.map((item: any) => ({
+        id: item.id,
+        media_type: item.media_type,
+        has_thumbnail: !!item.thumbnail_url,
+        has_media_url: !!item.media_url,
+      }))
+      console.log('✅ [getProfilePosts] Returning', parsed.data.length, 'posts')
+      console.log('🔍 [getProfilePosts] Media types breakdown:', {
+        images: mediaTypes.filter((m: any) => m.media_type === 'IMAGE').length,
+        videos: mediaTypes.filter((m: any) => m.media_type === 'VIDEO').length,
+        carousels: mediaTypes.filter((m: any) => m.media_type === 'CAROUSEL_ALBUM').length,
+        samples: mediaTypes.slice(0, 5),
+      })
+      return { status: 200, data: parsed }
+    }
+
+    console.warn('⚠️ [getProfilePosts] No posts found, returning empty array')
+    return { status: 200, data: { data: [] } }
+  } catch (error: any) {
+    console.error('❌ [getProfilePosts] ERROR:', error)
+    console.error('❌ [getProfilePosts] Error details:', { 
+      message: error?.message, 
+      stack: error?.stack,
+      name: error?.name,
+    })
+    return { status: 500, data: { data: [] } }
+  }
+}
+
+
+
+export const savePosts = async (
+  autmationId: string,
+  posts: {
+    postid: string
+    caption?: string
+    media: string
+    mediaType: 'IMAGE' | 'VIDEO' | 'CAROSEL_ALBUM'
+  }[]
+) => {
+  await onCurrentUser()
+  try {
+    const create = await addPost(autmationId, posts)
+
+    if (create) return { status: 200, data: 'Posts attached' }
+
+    return { status: 404, data: 'Automation not found' }
+  } catch (error) {
+    return { status: 500, data: 'Oops! something went wrong' }
+  }
+}
+
+export const activateAutomation = async (id: string, state: boolean) => {
+  await onCurrentUser()
+  try {
+    const update = await updateAutomation(id, { active: state })
+    if (update)
+      return {
+        status: 200,
+        data: `Automation ${state ? 'activated' : 'disabled'}`,
+      }
+    return { status: 404, data: 'Automation not found' }
+  } catch (error) {
+    return { status: 500, data: 'Oops! something went wrong' }
+  }
+}

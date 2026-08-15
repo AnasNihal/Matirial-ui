@@ -1,0 +1,235 @@
+{
+  "meta": {
+    "project": "Mation Instagram Automation Platform",
+    "date": "2025-12-05",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "Mation is a SaaS platform designed for Instagram creators, businesses, and marketers to automate engagement by responding instantly to comments and direct messages using keyword-based triggers. It supports manual message responses and advanced AI-powered smart replies to help users increase engagement, convert followers to customers, and efficiently scale their Instagram presence.",
+  "core_goals": [
+    "Enable seamless automation of Instagram interactions to save user time and resources.",
+    "Provide customizable keyword-based triggers with flexible response types including manual and AI-powered replies.",
+    "Integrate securely and reliably with Instagram's Graph API for data syncing and real-time event handling.",
+    "Offer a comprehensive dashboard for managing automations, viewing metrics, and performing quick actions.",
+    "Support scalable subscription plans with easy payment processing through Stripe.",
+    "Ensure high performance and reliability with aggressive caching, efficient database operations, and robust webhook processing."
+  ],
+  "key_features": [
+    "User Authentication and Onboarding via Clerk with secure sign-up/sign-in flows and session management.",
+    "Instagram Integration using OAuth for account connection, token management, and profile data syncing.",
+    "Automation System supporting comment and DM triggers, with MESSAGE and SMARTAI listeners for manual and AI-powered responses.",
+    "Webhook Handler endpoint to process Instagram events (comments and DMs) and trigger matching automations.",
+    "Dashboard UI including an overview metrics panel, automation listings, detailed automation builder, integration status, and user settings.",
+    "Subscription & Billing system integrating Stripe for secure checkout, plan subscriptions, upgrades, and subscription state management.",
+    "Analytics & Metrics for tracking engagement, DM and comment responses, automation statuses, and trends.",
+    "Rich media support in automated responses including images, links, and formatted messages.",
+    "Dark/Light theme toggle for improved user experience.",
+    "Robust error handling and loading states to ensure smooth user interaction."
+  ],
+  "user_flow_summary": [
+    "New User Onboarding: user registers via Clerk, connects Instagram account, and creates first automation with guided prompts.",
+    "Creating a Comment Automation: user names automation, selects comment trigger, adds keywords, chooses Instagram posts, configures MESSAGE listener responses, and activates automation.",
+    "Creating a DM Automation: user creates automation triggered by DMs, adds keywords, selects listener type (MESSAGE or SMARTAI), configures responses, and activates automation.",
+    "Upgrading to Pro Plan: user initiates upgrade from settings, completes Stripe checkout, and gains access to advanced SMARTAI features.",
+    "Instagram Integration Flow: user connects Instagram account via OAuth, system manages tokens, syncs profile data, and configures webhook subscriptions.",
+    "Webhook Event Handling: Instagram events POSTed to webhook endpoint are validated, matched against automations, responses are executed, and metrics updated accordingly."
+  ],
+  "validation_criteria": [
+    "User authentication works securely with Clerk, allowing account creation, log-in, and session management without errors.",
+    "Instagram account integration succeeds with OAuth flow, token storage, profile syncing, and webhook subscription setup.",
+    "Automations correctly trigger on matching comment and DM keywords, and execute configured listener responses (MESSAGE and SMARTAI) appropriately.",
+    "Webhook endpoint validates incoming Instagram events and processes them with no delays or failures, returning proper status codes.",
+    "Dashboard displays accurate metrics and automation statuses updated in real-time or near-real-time.",
+    "Subscription upgrade transitions user access from Free to Pro plan features accurately with Stripe payment confirmation.",
+    "Data fetching uses React Query caching effectively to optimize performance and minimize unnecessary network calls.",
+    "UI components render correctly with consistent styling and responsive behavior including dark/light theme toggling.",
+    "Error handling mechanisms capture and log errors without crashing the app, and user-facing error messages are clear and helpful.",
+    "All key user flows from onboarding to automation creation to subscription upgrade complete successfully end-to-end without functional bugs."
+  ],
+  "code_summary": {
+    "tech_stack": [
+      "TypeScript",
+      "Next.js 14.2.7",
+      "React 18",
+      "PostgreSQL",
+      "Prisma ORM",
+      "Clerk Authentication",
+      "Tailwind CSS",
+      "Radix UI",
+      "React Query",
+      "Redux Toolkit",
+      "OpenAI API",
+      "Instagram Graph API",
+      "Stripe"
+    ],
+    "features": [
+      {
+        "name": "User Authentication",
+        "description": "Clerk-based authentication system with sign-in and sign-up flows",
+        "files": [
+          "src/app/(auth)/sign-in/[[...sign-in]]/page.tsx",
+          "src/app/(auth)/sign-up/[[...sign-up]]/page.tsx",
+          "src/middleware.ts",
+          "src/components/global/clerk-auth-state/index.tsx"
+        ]
+      },
+      {
+        "name": "Dashboard",
+        "description": "Main dashboard with metrics, automation overview, and quick actions",
+        "files": [
+          "src/app/(protected)/dashboard/[slug]/page.tsx",
+          "src/app/(protected)/dashboard/[slug]/_components/metrics/index.tsx",
+          "src/app/(protected)/dashboard/[slug]/_components/metrics/metrics-card.tsx"
+        ]
+      },
+      {
+        "name": "Automation Management",
+        "description": "Create, edit, and manage Instagram automations with triggers, keywords, and responses",
+        "files": [
+          "src/app/(protected)/dashboard/[slug]/automations/page.tsx",
+          "src/app/(protected)/dashboard/[slug]/automations/[id]/page.tsx",
+          "src/components/global/automations/builder/automation-builder.tsx",
+          "src/components/global/automations/builder/keyword-panel.tsx",
+          "src/components/global/automations/builder/post-panel.tsx",
+          "src/components/global/automations/builder/dm-panel.tsx",
+          "src/components/global/automations/builder/phone-preview.tsx",
+          "src/components/global/automations/trigger/index.tsx",
+          "src/components/global/automations/trigger/active.tsx",
+          "src/components/global/automations/trigger/keywords.tsx",
+          "src/components/global/automation-list/index.tsx",
+          "src/components/global/create-automation/index.tsx",
+          "src/components/global/activate-automation-button/index.tsx"
+        ]
+      },
+      {
+        "name": "Instagram Integration",
+        "description": "Connect Instagram account via OAuth, manage tokens, and sync profile data",
+        "files": [
+          "src/app/(protected)/dashboard/[slug]/integrations/page.tsx",
+          "src/app/(protected)/dashboard/[slug]/integrations/_components/integration-card/index.tsx",
+          "src/app/(protected)/callback/instagram/page.tsx",
+          "src/components/global/automations/builder/integration-warning-modal.tsx",
+          "src/actions/integrations/index.ts",
+          "src/actions/integrations/queries.ts"
+        ]
+      },
+      {
+        "name": "Webhook Handler",
+        "description": "Process Instagram webhook events for comments and DMs, trigger automations",
+        "files": [
+          "src/app/(protected)/api/webhook/instagram/route.ts",
+          "src/actions/webhook/queries.ts"
+        ]
+      },
+      {
+        "name": "Payment & Subscription",
+        "description": "Stripe integration for subscription management and plan upgrades",
+        "files": [
+          "src/app/(protected)/payment/page.tsx",
+          "src/components/global/payment-button/index.tsx",
+          "src/components/global/billing/index.tsx",
+          "src/components/global/billing/payment-card.tsx",
+          "src/components/global/subscription-plan/index.tsx",
+          "src/lib/stripe.ts"
+        ]
+      },
+      {
+        "name": "Data Fetching & Caching",
+        "description": "React Query hooks for data fetching with aggressive caching and prefetching",
+        "files": [
+          "src/hooks/user-queries.ts",
+          "src/hooks/use-automations.ts",
+          "src/hooks/use-prefetch.ts",
+          "src/hooks/use-aggressive-prefetch.ts",
+          "src/providers/react-query-provider.tsx",
+          "src/components/global/data-prefetcher/index.tsx"
+        ]
+      },
+      {
+        "name": "UI Components",
+        "description": "Reusable UI components built with Radix UI and Tailwind CSS",
+        "files": [
+          "src/components/ui/button.tsx",
+          "src/components/ui/input.tsx",
+          "src/components/ui/card.tsx",
+          "src/components/ui/dialog.tsx",
+          "src/components/ui/sheet.tsx",
+          "src/components/ui/toast.tsx",
+          "src/components/ui/tabs.tsx",
+          "src/components/ui/select.tsx",
+          "src/components/ui/switch.tsx"
+        ]
+      },
+      {
+        "name": "Navigation",
+        "description": "Sidebar navigation, bottom nav for mobile, and breadcrumbs",
+        "files": [
+          "src/components/global/sidebar/index.tsx",
+          "src/components/global/sidebar/items.tsx",
+          "src/components/global/bottom-nav/index.tsx",
+          "src/components/global/bread-crumbs/main-bread-crumb/index.tsx",
+          "src/components/global/infobar/index.tsx"
+        ]
+      },
+      {
+        "name": "Theme Management",
+        "description": "Dark/light theme toggle with next-themes",
+        "files": [
+          "src/components/global/theme-toggle/index.tsx",
+          "src/providers/theme-provider.tsx"
+        ]
+      },
+      {
+        "name": "Instagram API Client",
+        "description": "Functions for interacting with Instagram Graph API - sending DMs, comments, fetching posts",
+        "files": [
+          "src/lib/fetch.ts"
+        ]
+      },
+      {
+        "name": "AI Integration",
+        "description": "OpenAI integration for Smart AI automation responses",
+        "files": [
+          "src/lib/openai.ts"
+        ]
+      },
+      {
+        "name": "Database Operations",
+        "description": "Prisma-based database queries and mutations for automations, users, integrations",
+        "files": [
+          "src/actions/automations/index.ts",
+          "src/actions/automations/queries.ts",
+          "src/actions/user/index.ts",
+          "src/actions/user/queries.ts",
+          "src/lib/prisma.ts"
+        ]
+      },
+      {
+        "name": "Landing Page",
+        "description": "Public marketing page with features, pricing, and call-to-action",
+        "files": [
+          "src/app/(website)/page.tsx"
+        ]
+      },
+      {
+        "name": "Error Handling",
+        "description": "Global error logger and error boundary components",
+        "files": [
+          "src/components/global/error-logger/index.tsx"
+        ]
+      },
+      {
+        "name": "Loading States",
+        "description": "Skeleton loaders and loading indicators for better UX",
+        "files": [
+          "src/components/global/loader/index.tsx",
+          "src/components/global/loader/automation-list-skeleton.tsx",
+          "src/components/global/loader/automation-builder-skeleton.tsx",
+          "src/app/(protected)/dashboard/[slug]/automations/loading.tsx",
+          "src/app/(protected)/dashboard/[slug]/automations/[id]/loading.tsx",
+          "src/app/(protected)/dashboard/[slug]/integrations/loading.tsx",
+          "src/app/(protected)/dashboard/[slug]/settings/loading.tsx"
+        ]
+      }
+    ]
+  }
+}
